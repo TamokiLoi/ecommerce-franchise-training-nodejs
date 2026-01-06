@@ -1,0 +1,43 @@
+openapi: 3.0.0
+info:
+  title: Auth API
+  version: 1.0.0
+  description: Authentication API documentation
+  contact:
+    email: loinguyenlamthanh@gmail.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []
+tags:
+  - name: Migrate
+    description: Migrate related endpoints
+  - name: Index
+    description: Index Default
+paths:
+  /:
+    get:
+      summary: Index API - check server status
+      tags:
+        - Index
+      responses:
+        '200':
+          description: Server is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: API is running
