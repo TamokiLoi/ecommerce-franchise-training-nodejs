@@ -6,9 +6,7 @@ export default class IndexRoute implements IRoute {
   public path = "/";
   public router = Router();
 
-  public indexController = new IndexController();
-
-  constructor() {
+  constructor(private readonly indexController: IndexController) {
     this.initializeRoutes();
   }
 

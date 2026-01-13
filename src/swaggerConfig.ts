@@ -34,8 +34,16 @@ const options = {
         ],
         tags: [
             {
+                name: 'Index',
+                description: 'Index related endpoints',
+            },
+            {
                 name: 'Migrate',
                 description: 'Migrate related endpoints',
+            },
+            {
+                name: 'Auth',
+                description: 'Auth related endpoints',
             },
         ],
     },
