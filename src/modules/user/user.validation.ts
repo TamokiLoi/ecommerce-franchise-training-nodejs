@@ -7,8 +7,15 @@ import { UserRepository } from "./user.repository";
 export class UserValidation implements IUserValidation {
   constructor(private readonly userRepo: UserRepository) {}
 
-  public async validCreateUser(email: string): Promise<void> {
-    const exists = await this.userRepo.exists(this.emailExistsCondition(email));
+  public async validEmailUnique(email: string, excludeUserId?: string): Promise<void> {
+    const condition: any = { email, is_deleted: false };
+
+    if (excludeUserId) {
+      condition._id = { $ne: excludeUserId };
+    }
+
+    const exists = await this.userRepo.exists(condition);
+
     if (exists) {
       throw new HttpException(HttpStatus.BadRequest, `Your email '${email}' already exists`);
     }
@@ -31,8 +38,8 @@ export class UserValidation implements IUserValidation {
     }
 
     // check status user
-    if (user.is_blocked || user.is_deleted) {
-      const reason = user.is_blocked
+    if (user.is_active || user.is_deleted) {
+      const reason = user.is_active
         ? "locked. Please contact admin via mail to activate!"
         : "deleted. Please contact admin via mail for assistance!";
       throw new HttpException(HttpStatus.Forbidden, `Your account has been ${reason}`);

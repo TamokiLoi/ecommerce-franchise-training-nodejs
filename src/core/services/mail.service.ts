@@ -17,8 +17,8 @@ export class MailService {
 }
 
 export class MailTemplate {
-  static verifyEmail(username: string, token: string) {
-    const domain = process.env.DOMAIN_FE;
+  static verifyEmail(username: string, token: string, originDomain?: string | undefined) {
+    const domain = originDomain || process.env.DOMAIN_FE;
 
     return {
       subject: "Verify your email address",
@@ -31,17 +31,22 @@ export class MailTemplate {
     };
   }
 
-  static resetPassword(username: string, token: string) {
-    const domain = process.env.DOMAIN_FE;
-
+  static resetPassword(username: string, newPassword: string) {
     return {
-      subject: "Reset your password",
+      subject: "Your password has been reset",
       content: `Hello ${username},
 
-        Please click the following link to reset your password:
-        ${domain}/reset-password/${token}
+        Your password has been reset successfully.
 
-        If you did not request this, please ignore this email.`,
+        Here is your new password:
+        ${newPassword}
+
+        Please use this password to log in and make sure to change your password immediately after logging in for security reasons.
+
+        If you did not request this password reset, please contact our support team as soon as possible.
+
+        Best regards,
+        Support Team`,
     };
   }
 }

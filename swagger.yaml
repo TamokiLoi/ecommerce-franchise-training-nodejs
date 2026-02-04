@@ -21,8 +21,14 @@ tags:
     description: Index related endpoints
   - name: Migrate
     description: Migrate related endpoints
+  - name: Franchise
+    description: Franchise related endpoints
+  - name: Role
+    description: Role related endpoints
   - name: Auth
     description: Auth related endpoints
+  - name: User
+    description: User related endpoints
 paths:
   /api/auth/register:
     post:
@@ -108,9 +114,62 @@ paths:
                     type: object
                     nullable: true
                     example: null
+  /api/auth/resend-token:
+    post:
+      summary: Resend verification token via email
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+      responses:
+        '200':
+          description: Verification token resent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    nullable: true
+                    example: null
+        '400':
+          description: Invalid email or user already verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: User already verified or email not found
   /api/auth:
     post:
-      summary: Login user and set authentication cookies
+      summary: Login user (Set HttpOnly cookies)
+      description: >
+        Login for normal web usage.
+
+        - Access token and refresh token are set automatically as HttpOnly
+        cookies.
+
+        - Client does NOT receive tokens in response body.
       tags:
         - Auth
       requestBody:
@@ -133,9 +192,7 @@ paths:
                   example: 12345678
       responses:
         '200':
-          description: >-
-            Login successful. Access token and refresh token are set in HttpOnly
-            cookies.
+          description: Login successful. Tokens are set in HttpOnly cookies.
           headers:
             Set-Cookie:
               description: |
@@ -152,6 +209,8 @@ paths:
                     example: true
         '400':
           description: Invalid email or password
+        '401':
+          description: Unauthorized
         '403':
           description: User is blocked or deleted
     get:
@@ -186,6 +245,225 @@ paths:
                         example: customer
         '401':
           description: Unauthorized - user is not logged in or token is invalid
+  /api/auth/login-swagger:
+    post:
+      summary: Login user (Return JWT tokens for Swagger / API testing)
+      description: |
+        Login endpoint for Swagger, Postman, or external clients.
+        - Tokens are returned in response body.
+        - No cookies are set.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: 12345678
+      responses:
+        '200':
+          description: Login successful. Tokens are returned in response body.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      accessToken:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      refreshToken:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '400':
+          description: Invalid email or password
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is blocked or deleted
+  /api/auth/logout:
+    post:
+      summary: Logout user
+      description: |
+        Logout endpoint for both browser and API clients.
+
+        - If logged in via **cookie**: cookies will be cleared.
+        - If logged in via **Authorization header**: token will be revoked.
+
+        This endpoint requires authentication.
+      tags:
+        - Auth
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: null
+                    example: null
+        '401':
+          description: Unauthorized (missing or invalid token)
+  /api/auth/forgot-password:
+    put:
+      summary: Forgot password - generate and send new password via email
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+      responses:
+        '200':
+          description: New password has been sent to user's email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    nullable: true
+                    example: null
+        '400':
+          description: User not found, not verified, or blocked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: User does not exist or is not eligible for password reset
+        '500':
+          description: Failed to send email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Failed to send reset password email
+  /api/auth/change-password:
+    put:
+      summary: Change password for logged-in user
+      security:
+        - Bearer: []
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - old_password
+                - new_password
+              properties:
+                old_password:
+                  type: string
+                  example: oldPassword123
+                new_password:
+                  type: string
+                  example: newStrongPassword456
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    nullable: true
+                    example: null
+        '400':
+          description: Invalid input or business rule violation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Old password is required
+        '401':
+          description: Unauthorized - old password incorrect or invalid token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Old password is incorrect
+        '403':
+          description: Forbidden - user is blocked or not allowed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Cannot change password for default admin account
   /:
     get:
       summary: Index API - check server status
@@ -205,3 +483,153 @@ paths:
                   message:
                     type: string
                     example: API is running
+  /api/roles:
+    get:
+      summary: Get all system roles
+      tags:
+        - Role
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Get list of roles successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                          example: ADMIN
+                        value:
+                          type: string
+                          example: admin
+        '401':
+          description: Unauthorized - missing or invalid token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Unauthorized
+  /api/users:
+    post:
+      summary: Create new user (Admin only)
+      tags:
+        - User
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: staff01@gmail.com
+                password:
+                  type: string
+                  minLength: 8
+                  example: Password@123
+                name:
+                  type: string
+                  example: Staff Nguyen
+                role:
+                  type: string
+                  example: STAFF
+      responses:
+        '200':
+          description: User created successfully
+        '401':
+          description: Unauthorized - missing or invalid token
+        '403':
+          description: Forbidden - only admin can create user
+  /api/users/{id}:
+    get:
+      summary: Get user by id
+      tags:
+        - User
+      security:
+        - Bearer: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: User ID
+          example: 6786117ca2e8a8cfbf2032bf
+      responses:
+        '200':
+          description: Get user information successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: 6786117ca2e8a8cfbf2032bf
+                      email:
+                        type: string
+                        example: staff01@gmail.com
+                      role:
+                        type: string
+                        example: staff
+                      name:
+                        type: string
+                        example: Staff Nguyen
+                      phone:
+                        type: string
+                        example: '0909123456'
+        '401':
+          description: Unauthorized - missing or invalid token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Unauthorized
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: User not found

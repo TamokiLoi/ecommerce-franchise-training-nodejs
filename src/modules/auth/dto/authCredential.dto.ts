@@ -9,12 +9,9 @@ export default class AuthCredentialDto {
   @MinLength(6)
   public password: string;
 
-  public group_id: string;
-
-  constructor(email: string, password: string, group_id?: string) {
+  constructor(email: string, password: string,) {
     this.email = email;
     this.password = password;
-    this.group_id = "";
   }
 }
 

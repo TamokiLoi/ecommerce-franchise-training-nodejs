@@ -1,4 +1,5 @@
 export const COLLECTION_NAME = {
+    FRANCHISE: 'Franchise',
     ROLE: 'Role',
     JOB: 'Job',
     DEPARTMENT: 'Department',

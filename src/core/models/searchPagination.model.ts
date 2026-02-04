@@ -16,7 +16,7 @@ export class SearchPaginationRequestModel<T> {
 
     @IsNotEmptyObject()
     @ValidateNested()
-    @Type(() => Object) // Use Object to allow any type for searchCondition
+    @Type(() => Object) // Generic type T cannot be used directly here
     public searchCondition: T;
 }
 

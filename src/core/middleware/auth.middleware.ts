@@ -6,10 +6,17 @@ import { BaseRole, HttpStatus } from "../enums";
 
 export const authMiddleware = (): RequestHandler => {
   return async (req, res, next) => {
-    const token = req.cookies?.access_token;
+    let token = req.cookies?.access_token;
+    const authHeader = req.headers["authorization"];
+
+    if (!token && authHeader?.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    }
 
     if (!token) {
-      return res.status(HttpStatus.NotFound).json(formatResponse("You are not logged in. Please log in to continue!"));
+      return res
+        .status(HttpStatus.Unauthorized)
+        .json(formatResponse("You are not logged in. Please log in to continue!"));
     }
 
     try {
@@ -23,7 +30,7 @@ export const authMiddleware = (): RequestHandler => {
       });
 
       if (!isValidUser) {
-        return res.status(HttpStatus.NotFound).json(formatResponse("Invalid token"));
+        return res.status(HttpStatus.Unauthorized).json(formatResponse("Invalid token"));
       }
 
       req.user = {
@@ -34,7 +41,7 @@ export const authMiddleware = (): RequestHandler => {
 
       next();
     } catch (err) {
-      return res.status(401).json(formatResponse("Token expired or invalid"));
+      return res.status(HttpStatus.Unauthorized).json(formatResponse("Token expired or invalid"));
     }
   };
 };

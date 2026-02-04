@@ -12,9 +12,7 @@ export class AuthModule extends BaseModule<AuthRoute> {
 
     const userModule = new UserModule();
     const mailService = new MailService();
-
     const authService = new AuthService(userModule.getUserValidation(), userModule.getUserQuery(), mailService);
-
     const authController = new AuthController(authService);
 
     this.route = new AuthRoute(authController);

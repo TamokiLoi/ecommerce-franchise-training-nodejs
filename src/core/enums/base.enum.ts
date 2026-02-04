@@ -1,13 +1,14 @@
 export enum BaseRole {
-    ADMIN = 'admin',
-    MANAGER = 'manager',
-    EMPLOYEE = 'employee',
-    SHIPPER = 'shipper',
-    CUSTOMER = 'customer',
+    ADMIN = 'ADMIN',
+    MANAGER = 'MANAGER',
+    STAFF = 'STAFF',
+    SHIPPER = 'SHIPPER',
+    USER = 'USER',
 }
 
 export enum BaseField {
-    GROUP_ID = 'group_id',
+    ID = 'id',
+    IS_ACTIVE = 'is_active',
     CREATED_AT = 'created_at',
     UPDATED_AT = 'updated_at',
     IS_DELETED = 'is_deleted',

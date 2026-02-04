@@ -92,7 +92,7 @@ export default class App {
   // declare init router
   private initializeRoute(routes: IRoute[]) {
     routes.forEach((route) => {
-      this.app.use(route.path, route.router);
+      this.app.use('/', route.router);
     });
   }
 }

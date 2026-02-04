@@ -1,8 +1,9 @@
+import { Types } from "mongoose";
 import { BaseField } from "../enums";
-import { SearchPaginationResponseModel } from "../models";
 
 export interface IBase {
-  [BaseField.GROUP_ID]: String;
+  [BaseField.ID]: Types.ObjectId;
+  [BaseField.IS_ACTIVE]?: boolean; // default true
   [BaseField.CREATED_AT]?: Date; // default new Date()
   [BaseField.UPDATED_AT]?: Date; // default new Date()
   [BaseField.IS_DELETED]?: boolean; // flag for soft delete, default is false

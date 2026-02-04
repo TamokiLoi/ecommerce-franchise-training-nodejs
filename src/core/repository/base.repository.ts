@@ -1,4 +1,4 @@
-import { Document, Model, UpdateWriteOpResult } from "mongoose";
+import { ClientSession, Document, Model, UpdateWriteOpResult } from "mongoose";
 import { IError } from "../interfaces";
 import { normalizeParam } from "../utils";
 
@@ -9,23 +9,71 @@ export class BaseRepository<T extends Document> {
     this.model = model;
   }
 
-  public async create(data: Partial<T>): Promise<T> {
-    const newItem = new this.model(data);
-    return (await newItem.save()) as T;
+  public async create(data: Partial<T>, session?: ClientSession): Promise<T> {
+    const doc = new this.model(data);
+    await doc.save(session ? { session } : undefined);
+    return this.toObject(doc);
   }
 
-  public findById(id: string): Promise<T | null> {
-    return this.model.findOne({ _id: id, is_deleted: false });
+  public async findById(id: string, is_deleted = false): Promise<T | null> {
+    const doc = await this.model.findOne({ _id: id, is_deleted });
+    return doc ? this.toObject(doc) : null;
   }
 
-  public findAll(): Promise<T[]> {
-    return this.model.find().exec();
+  public async findAll(filter: Partial<T> = {}): Promise<T[]> {
+    const docs = await this.model.find({ ...filter, is_deleted: false });
+    return docs.map((doc) => this.toObject(doc));
+  }
+
+  public async update(id: string, data: Partial<T>, session?: ClientSession): Promise<T> {
+    const updatedDoc = await this.model.findOneAndUpdate(
+      { _id: id, is_deleted: false },
+      { ...data, updated_at: new Date() },
+      { new: true, session },
+    );
+
+    if (!updatedDoc) {
+      throw new Error(`Document with ID ${id} not found`);
+    }
+
+    return this.toObject(updatedDoc);
+  }
+
+  // delete flag logic
+  public async softDeleteById(id: string): Promise<void> {
+    const result = await this.model.updateOne(
+      { _id: id, is_deleted: false },
+      { is_deleted: true, updated_at: new Date() },
+    );
+
+    if (result.matchedCount === 0) {
+      throw new Error(`Document with ID ${id} not found`);
+    }
+  }
+
+  // restore flag logic
+  public async restoreById(id: string): Promise<T> {
+    const doc = await this.model.findOneAndUpdate(
+      { _id: id, is_deleted: true },
+      { is_deleted: false, updated_at: new Date() },
+      { new: true },
+    );
+
+    if (!doc) {
+      throw new Error(`Document with ID ${id} not found`);
+    }
+
+    return this.toObject(doc);
+  }
+
+  protected toObject(doc: any): T {
+    return doc.toObject() as T;
   }
 
   public findItemsWithKeyword(
     keyword: string,
     searchableFields: string[],
-    additionalQuery: Record<string, unknown> = {}
+    additionalQuery: Record<string, unknown> = {},
   ): Promise<T[]> {
     const query: Record<string, unknown> = { ...additionalQuery };
 
@@ -42,44 +90,54 @@ export class BaseRepository<T extends Document> {
       .exec();
   }
 
-  public async update(id: string, data: Partial<T>): Promise<T> {
-    const updatedDoc = await this.model.findByIdAndUpdate(id, data, { new: true }).exec();
-    if (!updatedDoc) {
-      throw new Error(`Document with ID ${id} not found`);
+  public async existsByField(
+    fieldName: string,
+    fieldValue: string,
+    options?: { excludeId?: string },
+  ): Promise<boolean> {
+    const query: any = {
+      [fieldName]: fieldValue,
+      is_deleted: false,
+    };
+
+    if (options?.excludeId) {
+      query._id = { $ne: options.excludeId };
     }
-    return updatedDoc;
+
+    const count = await this.model.countDocuments(query);
+    return count > 0;
   }
 
-  // delete flag logic
-  public delete(id: string): Promise<UpdateWriteOpResult> {
-    return this.model.updateOne({ _id: id }, { is_deleted: true, updated_at: new Date() });
-  }
+  public async existsByFields(fields: Record<string, string>, options?: { excludeId?: string }): Promise<string[]> {
+    const orConditions = Object.entries(fields)
+      .filter(([_, value]) => value !== undefined && value !== null)
+      .map(([key, value]) => ({ [key]: value }));
 
-  // check fields duplicate
-  public async checkFieldsExists<T>(
-    fields: { fieldName: string; fieldValue: string }[],
-    errorResults: IError[],
-    title: string
-  ): Promise<IError[]> {
-    for (const { fieldName, fieldValue } of fields) {
-      const fieldValid = await this.checkFieldExists(fieldName, fieldValue);
-      if (fieldValid) {
-        errorResults.push({
-          message: `${title} with ${fieldName.replace("_", " ")} '${fieldValue}' already exists!`,
-          field: fieldName,
-        });
-      }
+    if (orConditions.length === 0) return [];
+
+    const query: any = {
+      $or: orConditions,
+      is_deleted: false,
+    };
+
+    if (options?.excludeId) {
+      query._id = { $ne: options.excludeId };
     }
-    return errorResults;
-  }
 
-  // check field duplicate
-  public async checkFieldExists<T>(fieldName: string, fieldValue: string): Promise<T | null> {
-    const escapedValue = fieldValue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const query = {
-      [fieldName]: { $regex: new RegExp("^" + escapedValue + "$", "i") },
-    } as Record<string, unknown>;
+    const existedDocs = await this.model.find(query).select(Object.keys(fields).join(" "));
 
-    return await this.model.findOne(query);
+    const duplicatedFields = new Set<string>();
+
+    existedDocs.forEach((doc) => {
+      const obj = doc.toObject() as Record<string, any>;
+
+      Object.entries(fields).forEach(([key, value]) => {
+        if (obj[key] === value) {
+          duplicatedFields.add(key);
+        }
+      });
+    });
+
+    return Array.from(duplicatedFields);
   }
 }
