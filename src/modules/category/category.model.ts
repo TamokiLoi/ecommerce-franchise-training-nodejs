@@ -9,8 +9,8 @@ const CategorySchemaEntity = new Schema({
   [BaseFieldName.CODE]: { type: String, required: true, unique: true },
   [BaseFieldName.NAME]: { type: String, required: true },
   [BaseFieldName.DESCRIPTION]: { type: String },
-  [BaseFieldName.SORT_ORDER]: { type: Number, default: 0 },
   [CategoryFieldName.PARENT_ID]: { type: String },
+  
   ...BaseModelFields,
 });
 

@@ -7,8 +7,8 @@ import { IUserFranchiseRole } from "./user-franchise-role.interface";
 
 const UserFranchiseRoleSchemaEntity = new Schema({
   [UserFranchiseRoleFieldName.FRANCHISE_ID]: { type: String, default: GLOBAL_FRANCHISE_ID },
-  [UserFranchiseRoleFieldName.ROLE_ID]: { type: String, required: true },
-  [UserFranchiseRoleFieldName.USER_ID]: { type: String, required: true },
+  [UserFranchiseRoleFieldName.ROLE_ID]: { type: mongoose.Schema.Types.ObjectId, ref: COLLECTION_NAME.ROLE,required: true },
+  [UserFranchiseRoleFieldName.USER_ID]: { type: mongoose.Schema.Types.ObjectId, ref: COLLECTION_NAME.USER, required: true },
   [UserFranchiseRoleFieldName.NOTE]: { type: String, required: false },
 
   ...BaseModelFields,

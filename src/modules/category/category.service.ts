@@ -6,7 +6,7 @@ import { BaseCrudService } from "../../core/services";
 import { checkEmptyObject, normalizeCode, normalizeName } from "../../core/utils";
 import { AuditAction, AuditEntityType, buildAuditDiff, IAuditLogger, pickAuditSnapshot } from "../audit-log";
 import { CategoryFieldName } from "./category.enum";
-import { ICategory } from "./category.interface";
+import { ICategory, ICategoryQuery } from "./category.interface";
 import { CategoryRepository } from "./category.repository";
 import CreateCategoryDto from "./dto/create.dto";
 import { SearchPaginationItemDto } from "./dto/search.dto";
@@ -16,16 +16,13 @@ const AUDIT_FIELDS_ITEM = [
   BaseFieldName.CODE,
   BaseFieldName.NAME,
   BaseFieldName.DESCRIPTION,
-  BaseFieldName.SORT_ORDER,
   CategoryFieldName.PARENT_ID,
 ] as readonly (keyof ICategory)[];
 
-export class CategoryService extends BaseCrudService<
-  ICategory,
-  CreateCategoryDto,
-  UpdateCategoryDto,
-  SearchPaginationItemDto
-> {
+export class CategoryService
+  extends BaseCrudService<ICategory, CreateCategoryDto, UpdateCategoryDto, SearchPaginationItemDto>
+  implements ICategoryQuery
+{
   private readonly categoryRepo: CategoryRepository;
 
   constructor(
@@ -175,5 +172,10 @@ export class CategoryService extends BaseCrudService<
   // Support for api get all categories (no pagination, no filter)
   public async getAllCategories(): Promise<ICategory[]> {
     return this.repo.findAll();
+  }
+
+  // Support for ICategoryQuery
+  public async getById(id: string): Promise<ICategory | null> {
+    return this.repo.findById(id);
   }
 }

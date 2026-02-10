@@ -10,20 +10,28 @@ import { ProductModule } from "./modules/product";
 import { RoleModule } from "./modules/role";
 import { UserModule } from "./modules/user";
 import { UserFranchiseRoleModule } from "./modules/user-franchise-role";
+import { CategoryFranchiseModule } from "./modules/category-franchise/category-franchise.module";
 
 dotenv.config();
 validateEnv();
 
+// ===== Core / infra =====
 const indexModule = new IndexModule();
 const auditLogModule = new AuditLogModule();
-const authModule = new AuthModule();
+
+// ===== Domain modules (singleton) =====
 const franchiseModule = new FranchiseModule();
-const roleModule = new RoleModule();
 const userModule = new UserModule();
-const userFranchiseRoleModule = new UserFranchiseRoleModule();
+const roleModule = new RoleModule();
 const categoryModule = new CategoryModule();
 const productModule = new ProductModule();
 
+// ===== Dependent modules =====
+const userFranchiseRoleModule = new UserFranchiseRoleModule(userModule, roleModule, franchiseModule);
+const authModule = new AuthModule(userFranchiseRoleModule, userModule);
+const categoryFranchiseModule = new CategoryFranchiseModule(categoryModule, franchiseModule);
+
+// ===== Register routes =====
 const routes = [
   indexModule.getRoute(),
   auditLogModule.getRoute(),
@@ -34,7 +42,8 @@ const routes = [
   userFranchiseRoleModule.getRoute(),
   categoryModule.getRoute(),
   productModule.getRoute(),
+  categoryFranchiseModule.getRoute(),
 ];
-const app = new App(routes);
 
+const app = new App(routes);
 app.listen();

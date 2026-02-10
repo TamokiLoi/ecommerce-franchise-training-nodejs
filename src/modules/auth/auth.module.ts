@@ -7,21 +7,19 @@ import AuthRoute from "./auth.route";
 import AuthService from "./auth.service";
 
 export class AuthModule extends BaseModule<AuthRoute> {
-  constructor() {
+  constructor(userFranchiseRoleModule: UserFranchiseRoleModule, userModule: UserModule) {
     super();
 
+    // ===== External domain dependencies =====
+    const userContext = userFranchiseRoleModule.getUserContext();
+    const userQuery = userModule.getUserQuery();
+    const userValidation = userModule.getUserValidation();
+
     // Internal dependencies
-    const userModule = new UserModule();
-    const userFranchiseRoleModule = new UserFranchiseRoleModule();
     const mailService = new MailService();
 
     // Core service and HTTP layer
-    const service = new AuthService(
-      userFranchiseRoleModule.getUserContext(),
-      userModule.getUserValidation(),
-      userModule.getUserQuery(),
-      mailService,
-    );
+    const service = new AuthService(userContext, userValidation, userQuery, mailService);
     const controller = new AuthController(service);
     this.route = new AuthRoute(controller);
   }

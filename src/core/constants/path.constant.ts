@@ -63,4 +63,13 @@ export const API_PATH = {
   PRODUCT_SEARCH: "/api/products/search",
   PRODUCT_ID: "/api/products/:id",
   PRODUCT_RESTORE: "/api/products/:id/restore",
+
+  // category franchises
+  CATEGORY_FRANCHISE: "/api/category-franchises", // assign categories to franchise
+  CATEGORY_FRANCHISE_ID: "/api/category-franchises/:id", // get, update, delete category-franchise by id
+  CATEGORY_FRANCHISE_RESTORE: "/api/category-franchises/:id/restore", // restore category-franchise by id
+  CATEGORY_FRANCHISE_CHANGE_STATUS: "/api/category-franchises/:id/status", // change status of category-franchise
+  CATEGORY_FRANCHISE_CHANGE_DISPLAY_ORDER: "/api/category-franchises/display-order", // change display order of category-franchise
+  CATEGORY_FRANCHISE_REORDER: "/api/category-franchises/reorder", // reorder categories of franchise
+  GET_CATEGORIES_BY_FRANCHISE: "/api/category-franchises/franchise/:franchiseId", // get categories of franchise
 };

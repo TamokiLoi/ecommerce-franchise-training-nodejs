@@ -11,6 +11,5 @@ export const mapItemToResponse = (item: ICategory): CategoryItemDto => {
     description: item.description,
     parent_id: item.parent_id,
     parent_name: item.parent_name,
-    sort_order: item.sort_order,
   };
 };

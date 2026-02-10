@@ -33,6 +33,8 @@ tags:
     description: User related endpoints
   - name: UserFranchiseRole
     description: UserFranchiseRole related endpoints
+  - name: Category Franchise
+    description: Franchise menu category endpoints
   - name: Category
     description: Category related endpoints
   - name: Product

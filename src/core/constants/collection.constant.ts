@@ -6,6 +6,9 @@ export const COLLECTION_NAME = {
     CATEGORY: 'Category',
     PRODUCT: 'Product',
 
+    // Master Data
+    CATEGORY_FRANCHISE: 'CategoryFranchise',
+
 
     JOB: 'Job',
     DEPARTMENT: 'Department',

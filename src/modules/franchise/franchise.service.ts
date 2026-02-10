@@ -215,6 +215,10 @@ export default class FranchiseService
     }));
   }
 
+  public async getById(id: string): Promise<IFranchise | null> {
+    return this.repo.findById(id);
+  }
+
   private validateBusinessRules(data: FranchiseTimeContext, errors: IError[]) {
     const openMinutes = toMinutes(data.opened_at);
     const closeMinutes = toMinutes(data.closed_at);

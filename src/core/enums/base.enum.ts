@@ -39,5 +39,5 @@ export enum BaseFieldName {
     CODE = "code",
     NAME = "name",
     DESCRIPTION = "description",
-    SORT_ORDER = "sort_order",
+    DISPLAY_ORDER = "display_order",
 }
