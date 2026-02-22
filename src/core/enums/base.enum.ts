@@ -51,9 +51,21 @@ export enum BaseFieldName {
   CATEGORY_FRANCHISE_ID = "category_franchise_id",
   PRODUCT_FRANCHISE_ID = "product_franchise_id",
   PRODUCT_CATEGORY_FRANCHISE_ID = "product_category_franchise_id",
+  INVENTORY_ID = "inventory_id",
+
+  REFERENCE_TYPE = "reference_type",
+  REFERENCE_ID = "reference_id",
 
   // Other common fields
   SIZE = "size",
   PRICE_BASE = "price_base",
   NOTE = "note",
+  QUANTITY = "quantity",
+  RESERVED_QUANTITY = "reserved_quantity",
+  ALERT_THRESHOLD = "alert_threshold",
+  TYPE = "type",
+  CHANGE = "change",
+  REASON = "reason",
+  CREATED_BY = "created_by"
+
 }

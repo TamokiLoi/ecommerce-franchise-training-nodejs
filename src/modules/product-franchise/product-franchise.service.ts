@@ -43,7 +43,6 @@ export class ProductFranchiseService
   }
 
   // ===== Start CRUD =====
-
   protected async beforeCreate(dto: CreateProductFranchiseDto, loggedUserId: string): Promise<void> {
     await checkEmptyObject(dto);
 
@@ -220,7 +219,6 @@ export class ProductFranchiseService
   protected async doSearch(dto: SearchPaginationItemDto): Promise<{ data: IProductFranchise[]; total: number }> {
     return this.productFranchiseRepo.getItems(dto);
   }
-
   // ===== End CRUD =====
 
   /**

@@ -7,6 +7,7 @@ import { CategoryModule } from "./modules/category";
 import { CategoryFranchiseModule } from "./modules/category-franchise";
 import { FranchiseModule } from "./modules/franchise";
 import { IndexModule } from "./modules/index";
+import { InventoryModule } from "./modules/inventory";
 import { ProductModule } from "./modules/product";
 import { ProductCategoryFranchiseModule } from "./modules/product-category-franchise";
 import { ProductFranchiseModule } from "./modules/product-franchise";
@@ -38,6 +39,7 @@ const productCategoryFranchiseModule = new ProductCategoryFranchiseModule(
   categoryFranchiseModule,
   productFranchiseModule,
 );
+const inventoryModule = new InventoryModule(productModule, productFranchiseModule);
 
 // ===== Register routes =====
 const routes = [
@@ -53,6 +55,7 @@ const routes = [
   categoryFranchiseModule.getRoute(),
   productFranchiseModule.getRoute(),
   productCategoryFranchiseModule.getRoute(),
+  inventoryModule.getRoute(),
 ];
 
 const app = new App(routes);

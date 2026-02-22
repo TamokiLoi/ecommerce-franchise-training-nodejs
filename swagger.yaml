@@ -37,6 +37,8 @@ tags:
     description: Franchise menu category endpoints
   - name: Category
     description: Category related endpoints
+  - name: Inventory
+    description: Inventory related endpoints
   - name: Product Category Franchise
     description: Product Category Franchise related endpoints
   - name: Product Franchise

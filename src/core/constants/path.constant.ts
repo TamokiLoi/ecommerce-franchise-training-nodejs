@@ -89,4 +89,15 @@ export const API_PATH = {
   PRODUCT_CATEGORY_FRANCHISE_CHANGE_STATUS: "/api/product-category-franchises/:id/status",
   PRODUCT_CATEGORY_FRANCHISE_REORDER: "/api/product-category-franchises/reorder", // reorder product by category of franchise
   GET_PRODUCTS_BY_CATEGORY: "/api/product-category-franchises/:categoryId", // get product by category of franchise
+
+  INVENTORY: "/api/inventories",
+  INVENTORY_SEARCH: "/api/inventories/search",
+  INVENTORY_ID: "/api/inventories/:id",
+  INVENTORY_RESTORE: "/api/inventories/:id/restore",
+
+  INVENTORY_ADJUST: "/api/inventories/adjust",
+  INVENTORY_LOW_STOCK_BY_FRANCHISE: "/api/inventories/low-stock/franchise/:franchiseId",
+
+  INVENTORY_LOGS: "/api/inventories/logs/:inventoryId",
+  INVENTORY_LOGS_BY_REFERENCE: "/api/inventories/logs/reference",
 };
