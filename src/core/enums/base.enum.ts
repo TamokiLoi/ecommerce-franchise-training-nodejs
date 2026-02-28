@@ -58,6 +58,7 @@ export enum BaseFieldName {
   PRODUCT_FRANCHISE_ID = "product_franchise_id",
   PRODUCT_CATEGORY_FRANCHISE_ID = "product_category_franchise_id",
   INVENTORY_ID = "inventory_id",
+  SHIFT_ID = "shift_id",
 
   REFERENCE_TYPE = "reference_type",
   REFERENCE_ID = "reference_id",
