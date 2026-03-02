@@ -118,4 +118,11 @@ export const API_PATH = {
 
   INVENTORY_LOGS: "/api/inventories/logs/:inventoryId",
   INVENTORY_LOGS_BY_REFERENCE: "/api/inventories/logs/reference",
+
+  SHIFT: "/api/shifts",
+  SHIFT_SEARCH: "/api/shifts/search",
+  SHIFT_ID: "/api/shifts/:id",
+  SHIFT_RESTORE: "/api/shifts/:id/restore",
+  SHIFT_CHANGE_STATUS: "/api/shifts/:id/status",
+  SHIFT_SELECT: "/api/shifts/select",
 };

@@ -3,6 +3,7 @@ import { HttpStatus } from "../../core/enums";
 import { HttpException } from "../../core/exceptions";
 import { BaseRepository } from "../../core/repository";
 import { formatItemsQuery } from "../../core/utils";
+import UpdateShiftDto from "../shift/dto/update.dto";
 import { SearchItemDto, SearchPaginationItemDto } from "./dto/search.dto";
 import { IFranchise } from "./franchise.interface";
 import FranchiseSchema from "./franchise.model";
@@ -64,4 +65,12 @@ export class FranchiseRepository extends BaseRepository<IFranchise> {
       throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.DATABASE_QUERY_FAILED);
     }
   }
+
+  public async updateShiftsByFranchiseId(id: string, data: UpdateShiftDto[], loggedUserId: string): Promise<void> {
+    await this.model.updateOne(
+      { _id: id },
+      { $set: { shifts: data } },
+    );
+  }
+
 }

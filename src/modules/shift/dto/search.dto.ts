@@ -4,11 +4,11 @@ import { Type } from "class-transformer";
 export class SearchItemDto  extends BaseSearchItemDto{
      @IsOptional()
      @IsString()
-     public keyword?: string; //  name
+     public name?: string; 
 
      @IsOptional()
      @IsString()
-     public franshise_id?: string;
+     public franchise_id?: string;
 
      @IsOptional()
      @IsString()
@@ -17,7 +17,7 @@ export class SearchItemDto  extends BaseSearchItemDto{
      @IsOptional()
      @IsString()
      public end_time?: string;
-     
+
 }
 
 export class SearchPaginationItemDto extends SearchPaginationRequestModel<SearchItemDto> {

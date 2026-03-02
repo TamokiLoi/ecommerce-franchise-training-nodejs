@@ -1,26 +1,26 @@
-import { IsNotEmpty, IsMongoId, IsString } from "class-validator";
+import { IsString, IsBoolean, IsOptional, Matches } from "class-validator";
+
 export default class UpdateShiftDto {
-     @IsNotEmpty()
-     @IsString()
-     name:string;
 
-     @IsNotEmpty()
-     @IsMongoId()
-     franchise_id:string;
+  @IsOptional()
+  @IsString()
+  name?: string;
 
-     @IsNotEmpty()
-     @IsString()
-     start_time:string;
+  @IsOptional()
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
+  start_time?: string;
 
-     @IsNotEmpty()
-     @IsString()
-     end_time:string;
+  @IsOptional()
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
+  end_time?: string;
 
+  @IsOptional()
+  @IsBoolean()
+  is_active?: boolean;
 
-     constructor(name:string,start_time:string,end_time:string,franchise_id:string){
-         this.name=name;
-         this.franchise_id=franchise_id;
-         this.start_time=start_time;
-         this.end_time=end_time;
-     }
+  @IsOptional()
+  @IsBoolean()
+  is_deleted?: boolean;
 }

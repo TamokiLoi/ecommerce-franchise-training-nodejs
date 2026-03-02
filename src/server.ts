@@ -14,6 +14,7 @@ import { ProductModule } from "./modules/product";
 import { ProductCategoryFranchiseModule } from "./modules/product-category-franchise";
 import { ProductFranchiseModule } from "./modules/product-franchise";
 import { RoleModule } from "./modules/role";
+import { ShiftModule } from "./modules/shift";
 import { UserModule } from "./modules/user";
 import { UserFranchiseRoleModule } from "./modules/user-franchise-role";
 
@@ -45,6 +46,7 @@ const productCategoryFranchiseModule = new ProductCategoryFranchiseModule(
 const inventoryModule = new InventoryModule(productModule, productFranchiseModule);
 const customerAuthModule = new CustomerAuthModule(customerModule);
 
+const shiftModule = new ShiftModule();
 // ===== Register routes =====
 const routes = [
   indexModule.getRoute(),
@@ -62,7 +64,10 @@ const routes = [
   productFranchiseModule.getRoute(),
   productCategoryFranchiseModule.getRoute(),
   inventoryModule.getRoute(),
+  shiftModule.getRoute(),
 ];
+
+console.log(`DEBUG: Total routes: ${routes.length}, Shift path: ${shiftModule.getRoute().path}`);
 
 const app = new App(routes);
 app.listen();

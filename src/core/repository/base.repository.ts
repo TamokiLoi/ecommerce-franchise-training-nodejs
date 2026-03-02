@@ -156,4 +156,9 @@ export class BaseRepository<T extends Document> {
 
     return Array.from(duplicatedFields);
   }
+
+  public async existsByFilter(filter: Record<string, any>): Promise<boolean> {
+    const count = await this.model.countDocuments({ ...filter, is_deleted: false });
+    return count > 0;
+  }
 }

@@ -1,12 +1,15 @@
 import { BaseRepository, formatItemsQuery, HttpException, HttpStatus, MSG_BUSINESS } from "../../core";
-import { IShift } from "./shift.interface";
 import ShiftSchema from "./shift.model";
-import { SearchItemDto,SearchPaginationItemDto } from "./dto/search.dto";
-
-
-export class ShiftRepository extends BaseRepository<IShift> {
+import { SearchItemDto, SearchPaginationItemDto } from "./dto/search.dto";
+import { IShift, IShiftQuery } from "./shift.interface";
+import { Types } from "mongoose";
+export class ShiftRepository extends BaseRepository<IShift> implements IShiftQuery {
   constructor() {
     super(ShiftSchema);
+  }
+
+  public async getById(id: string): Promise<IShift | null> {
+    return this.findById(id);
   }
 
   public async getItems (model:SearchPaginationItemDto): Promise<{ data: IShift[]; total: number }> {
@@ -15,23 +18,28 @@ export class ShiftRepository extends BaseRepository<IShift> {
           ...model.searchCondition,
         };
 
-    const {keyword,franshise_id,is_active,is_deleted} = searchCondition;
+    const {name,franchise_id,start_time,end_time,is_active,is_deleted} = searchCondition;
     const {pageNum,pageSize} = model.pageInfo;
 
     let matchQuery: Record<string, any> = {};
 
-    if(keyword?.trim()) {
-      matchQuery.$or = [
-        {code: {$regex: keyword.trim(), $options: "i"}},
-        {name: {$regex: keyword.trim(), $options: "i"}},
-      ]
+    if(franchise_id) {
+      matchQuery.franchise_id = new Types.ObjectId(franchise_id); 
     }
 
-    if(franshise_id) {
-      matchQuery.franshise_id = franshise_id;
+    if(name?.trim()) {
+      matchQuery.name = name.trim();
     }
 
-    matchQuery = formatItemsQuery(matchQuery, {is_active, is_deleted});
+    if(start_time) {
+      matchQuery.start_time = start_time;
+    }
+
+    if(end_time) {
+      matchQuery.end_time = end_time;
+    }
+
+    matchQuery = formatItemsQuery(matchQuery, { is_active, is_deleted: is_deleted ?? false });
 
     const skip = (pageNum - 1) * pageSize;
 
@@ -40,21 +48,26 @@ export class ShiftRepository extends BaseRepository<IShift> {
         {$match: matchQuery},
         {
           $lookup: {
-            from: "franshises",
-            localField: "franshise_id",
+            from: "franchises",
+            localField: "franchise_id",
             foreignField: "_id",
-            as: "franshise",
+            as: "franchise",
           },
         },
         {
           $unwind: {
-            path: "$franshise",
+            path: "$franchise",
             preserveNullAndEmptyArrays: true,
           },
         },
         {
           $addFields: {
-            franshise_name: "$franshise.name",
+            franchise_name: "$franchise.name",
+          },
+        },
+        {
+          $project: {
+            franchise: 0, 
           },
         },
         {
@@ -72,6 +85,14 @@ export class ShiftRepository extends BaseRepository<IShift> {
     } catch (error) {
       throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.DATABASE_QUERY_FAILED);
     }
+  }
+
+  public async getShiftsByFranchise(franchiseId: string): Promise<IShift[]> {
+    return this.model.find({
+      franchise_id: new Types.ObjectId(franchiseId),
+      is_active: true,
+      is_deleted: false,
+    }).sort({ name: 1 }).lean() as unknown as IShift[];
   }
 
 }

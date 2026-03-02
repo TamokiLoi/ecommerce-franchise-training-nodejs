@@ -1,6 +1,8 @@
+import { Types } from "mongoose";
+
 export interface ShiftItemDto {
      id:string;
-     franchise_id:string;
+     franchise_id:Types.ObjectId;
      name:string;
      start_time:string;
      end_time:string;
