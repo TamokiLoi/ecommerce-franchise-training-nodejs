@@ -27,6 +27,7 @@ const AUDIT_FIELDS_ITEM = [
   FranchiseFieldName.HOTLINE,
   FranchiseFieldName.LOGO_URL,
   FranchiseFieldName.ADDRESS,
+  FranchiseFieldName.GOOGLE_MAP_SCRIPT,
 ] as readonly (keyof IFranchise)[];
 
 export default class FranchiseService

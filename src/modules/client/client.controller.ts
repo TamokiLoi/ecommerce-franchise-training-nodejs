@@ -53,4 +53,14 @@ export class ClientController {
       next(error);
     }
   };
+
+  public getFranchiseDetail = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { franchiseId } = req.params;
+      const item = await this.service.getFranchiseDetail(franchiseId);
+      res.status(HttpStatus.Success).json(formatResponse(item));
+    } catch (error) {
+      next(error);
+    }
+  };
 }

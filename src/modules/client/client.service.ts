@@ -1,6 +1,6 @@
 import { IAuditLogger } from "../audit-log";
 import { ICategoryFranchiseQuery, PublicCategoryFranchiseItemDto } from "../category-franchise";
-import { IFranchiseQuery } from "../franchise";
+import { IFranchise, IFranchiseQuery, IFranchiseQueryResult } from "../franchise";
 import { IProductFranchiseQuery, PublicProductDetailDto, PublicProductItemDto } from "../product-franchise";
 
 export class ClientService {
@@ -12,7 +12,7 @@ export class ClientService {
   ) {}
 
   // Get list franchise
-  public async getFranchises() {
+  public async getFranchises(): Promise<IFranchiseQueryResult[]> {
     return this.franchiseQuery.getPublicFranchises();
   }
 
@@ -37,5 +37,10 @@ export class ClientService {
   // Get product detail
   public async getProductDetail(franchiseId: string, productId: string): Promise<PublicProductDetailDto | null> {
     return this.productFranchiseQuery.getPublicProductDetail(franchiseId, productId);
+  }
+
+  // Get franchise detail
+  public async getFranchiseDetail(franchiseId: string): Promise<IFranchise | null> {
+    return this.franchiseQuery.getById(franchiseId);
   }
 }

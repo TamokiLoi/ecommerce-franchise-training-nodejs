@@ -4,19 +4,19 @@ import { MSG, REGEX } from "../../../core/constants";
 export default class CreateFranchiseDto {
   @IsNotEmpty()
   @IsString()
-  public code: string;
+  public code!: string;
 
   @IsNotEmpty()
   @IsString()
-  public name: string;
+  public name!: string;
 
   @IsNotEmpty()
   @Matches(REGEX.TIME_HH_MM, { message: MSG.TIME_HH_MM })
-  public opened_at: string;
+  public opened_at!: string;
 
   @IsNotEmpty()
   @Matches(REGEX.TIME_HH_MM, { message: MSG.TIME_HH_MM })
-  public closed_at: string;
+  public closed_at!: string;
 
   @IsOptional()
   @IsString()
@@ -29,14 +29,8 @@ export default class CreateFranchiseDto {
   @IsOptional()
   @IsString()
   public address?: string;
-  
-  constructor(code: string, name: string, opened_at: string, closed_at: string,  hotline?: string, logo_url?: string, address?: string) {
-    this.code = code;
-    this.name = name;
-    this.opened_at = opened_at;
-    this.closed_at = closed_at;
-    this.hotline = hotline;
-    this.logo_url = logo_url;
-    this.address = address;
-  }
+
+  @IsOptional()
+  @IsString()
+  public google_map_url?: string;
 }

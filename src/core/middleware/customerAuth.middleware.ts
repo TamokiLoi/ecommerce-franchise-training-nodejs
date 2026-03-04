@@ -3,7 +3,10 @@ import jwt from "jsonwebtoken";
 import CustomerSchema from "../../modules/customer/customer.model";
 import { HttpStatus } from "../enums";
 import { CustomerAuthPayload } from "../models";
-import { formatResponse } from "../utils";
+
+const formatResponse = (message: string) => {
+  return { message, success: false, error: [] };
+};
 
 const customerAuthMiddleware = (): RequestHandler => {
   return async (req, res, next) => {

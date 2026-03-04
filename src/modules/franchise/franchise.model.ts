@@ -11,6 +11,7 @@ const FranchiseSchemaEntity = new Schema({
   [FranchiseFieldName.ADDRESS]: { type: String, default: "" },
   [FranchiseFieldName.OPENED_AT]: { type: String, required: true },
   [FranchiseFieldName.CLOSED_AT]: { type: String, required: true },
+  [FranchiseFieldName.GOOGLE_MAP_SCRIPT]: { type: String, default: "" },
 
   ...BASE_MODEL_FIELDS,
 });
