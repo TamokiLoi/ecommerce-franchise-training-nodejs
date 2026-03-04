@@ -25,7 +25,13 @@ export class BaseRepository<T extends Document> {
   public async findById(id: string, is_deleted = false): Promise<T | null> {
     const objectId = new Types.ObjectId(id);
 
-    const doc = await this.model.findOne({ _id: objectId, is_deleted });
+    const doc = await this.model.findOne({ _id: objectId, is_deleted, is_active: true });
+    return doc ? this.toObject(doc) : null;
+  }
+
+  public async findItemActive(id: string): Promise<T | null> {
+    const objectId = new Types.ObjectId(id);
+    const doc = await this.model.findOne({ _id: objectId, is_deleted: false, is_active: true });
     return doc ? this.toObject(doc) : null;
   }
 

@@ -256,6 +256,10 @@ export class ProductFranchiseService
     return this.repo.findById(id);
   }
 
+  public async getItemActive(id: string): Promise<IProductFranchise | null> {
+    return this.repo.findItemActive(id);
+  }
+
   public async getMenuByFranchise(franchiseId: string, categoryId?: string): Promise<PublicProductItemDto[]> {
     return this.productFranchiseRepo.getMenuByFranchise(franchiseId, categoryId);
   }
@@ -264,8 +268,8 @@ export class ProductFranchiseService
     return this.productFranchiseRepo.getPublicProducts(franchiseId, categoryId);
   }
 
-  public async getPublicProductDetail(productFranchiseId: string): Promise<PublicProductDetailDto | null> {
-    return this.productFranchiseRepo.getPublicProductDetail(productFranchiseId);
+  public async getPublicProductDetail(franchiseId: string, productId: string, ): Promise<PublicProductDetailDto | null> {
+    return this.productFranchiseRepo.getPublicProductDetail(franchiseId, productId);
   }
 
   // ==== Validation helpers =====

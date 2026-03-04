@@ -46,8 +46,8 @@ export class ClientController {
 
   public getProductDetail = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { productFranchiseId } = req.params;
-      const item = await this.service.getProductDetail(productFranchiseId);
+      const { franchiseId, productId } = req.params;
+      const item = await this.service.getProductDetail(franchiseId, productId);
       res.status(HttpStatus.Success).json(formatResponse(item));
     } catch (error) {
       next(error);

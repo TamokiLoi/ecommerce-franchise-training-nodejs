@@ -1,14 +1,17 @@
 import { Request } from "express";
-import { BaseFieldName, RoleScope } from "../enums";
+import { RoleScope } from "../enums";
 
-
+export enum UserType {
+  USER = "user",
+  CUSTOMER = "customer",
+}
 
 export interface AuthenticatedUserRequest extends Request {
   user: {
     id: string;
     context: IUserContext | null;
     version: number;
-    type: "user";
+    type: UserType.USER;
   };
 }
 
@@ -17,7 +20,7 @@ export interface AuthenticatedCustomerRequest extends Request {
     id: string;
     context: null; // Customers don't have a context
     version: number;
-    type: "customer";
+    type: UserType.CUSTOMER;
   };
 }
 
@@ -25,14 +28,14 @@ export interface UserAuthPayload {
   id: string;
   context: IUserContext | null;
   version: number;
-  type: "user" | "customer";
+  type: UserType;
 }
 
 export interface CustomerAuthPayload {
   id: string;
   context: null; // Customers don't have a context
   version: number;
-  type: "customer";
+  type: UserType.CUSTOMER;
 }
 
 export interface IUserContext {

@@ -20,6 +20,7 @@ export class CreateCartDto {
   public product_franchise_id!: string;
 
   @IsNotEmpty()
+  @Type(() => Number)
   @IsNumber()
   @Min(1)
   public quantity!: number;
@@ -35,6 +36,7 @@ export class AddToCartDto {
   product_franchise_id!: string;
 
   @IsNotEmpty()
+  @Type(() => Number)
   @IsNumber()
   @Min(1)
   quantity!: number;
@@ -44,6 +46,14 @@ export class AddToCartDto {
   @ValidateNested({ each: true })
   @Type(() => AddCartItemOptionDto)
   options?: AddCartItemOptionDto[];
+
+  @IsOptional()
+  @IsMongoId()
+  customer_id!: string;
+
+  @IsOptional()
+  @IsMongoId()
+  staff_id!: string;
 }
 
 export class AddCartItemOptionDto {
@@ -52,6 +62,7 @@ export class AddCartItemOptionDto {
   product_franchise_id!: string; // topping id
 
   @IsNotEmpty()
+  @Type(() => Number)
   @IsNumber()
   @Min(1)
   quantity!: number;

@@ -132,5 +132,5 @@ export const API_PATH = {
   CLIENT_CATEGORIES: "/api/clients/franchises/:franchiseId/categories",
   CLIENT_MENU: "/api/clients/menu",
   CLIENT_PRODUCTS: "/api/clients/products",
-  CLIENT_PRODUCT_DETAIL: "/api/clients/products/:productFranchiseId",
+  CLIENT_PRODUCT_DETAIL: "/api/clients/franchises/:franchiseId/products/:productId",
 };

@@ -35,7 +35,7 @@ export class ClientService {
   }
 
   // Get product detail
-  public async getProductDetail(productFranchiseId: string): Promise<PublicProductDetailDto | null> {
-    return this.productFranchiseQuery.getPublicProductDetail(productFranchiseId);
+  public async getProductDetail(franchiseId: string, productId: string): Promise<PublicProductDetailDto | null> {
+    return this.productFranchiseQuery.getPublicProductDetail(franchiseId, productId);
   }
 }

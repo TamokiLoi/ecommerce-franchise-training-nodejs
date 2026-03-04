@@ -14,7 +14,8 @@ export interface IProductFranchise extends Document, IBase {
 
 export interface IProductFranchiseQuery {
   getById(id: string): Promise<IProductFranchise | null>;
+  getItemActive(id: string): Promise<IProductFranchise | null>;
   getMenuByFranchise(franchiseId: string, categoryId?: string): Promise<PublicProductItemDto[]>;
   getPublicProducts(franchiseId: string, categoryId?: string): Promise<PublicProductItemDto[]>;
-  getPublicProductDetail(productFranchiseId: string): Promise<PublicProductDetailDto | null>;
+  getPublicProductDetail(franchiseId: string, productId: string): Promise<PublicProductDetailDto | null>;
 }

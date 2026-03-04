@@ -4,6 +4,7 @@ import {
   CustomerAuthPayload,
   IUserContext,
   UserAuthPayload,
+  UserType,
 } from "./base.model";
 import {
   BaseSearchItemDto,
@@ -20,4 +21,5 @@ export {
   SearchPaginationRequestModel,
   SearchPaginationResponseModel,
   UserAuthPayload,
+  UserType,
 };
