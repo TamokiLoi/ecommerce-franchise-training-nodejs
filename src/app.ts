@@ -22,6 +22,9 @@ export default class App {
     this.port = process.env.PORT || 3000;
     this.production = !!(process.env.NODE_ENV === "production");
 
+    // ❌ Disable ETag to prevent 304
+    this.app.disable("etag");
+
     this.initializeMiddleware();
     this.initializeSwagger();
     this.initializeRoute(routes);
@@ -74,6 +77,18 @@ export default class App {
     });
 
     this.app.use(cookieParser());
+
+    // 🚫 Disable cache for auth APIs
+    this.app.use("/auth", (req, res, next) => {
+      res.set("Cache-Control", "no-store");
+      next();
+    });
+
+    // 🚫 Disable cache for customer-auth APIs
+    this.app.use("/customer-auth", (req, res, next) => {
+      res.set("Cache-Control", "no-store");
+      next();
+    });
 
     if (this.production) {
       this.app.use(hpp());

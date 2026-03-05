@@ -94,14 +94,17 @@ const authMiddleware = (): RequestHandler => {
       token = authHeader.split(" ")[1];
     }
 
+    // ❗ Không có access token
     if (!token) {
+      // Có refresh token -> access token hết hạn
       if (req.cookies?.refresh_token) {
         return res.status(HttpStatus.Unauthorized).json(formatResponse("ACCESS_TOKEN_EXPIRED"));
       }
 
+      // Không có gì -> chưa login
       return res
         .status(HttpStatus.Unauthorized)
-        .json(formatResponse("You are not logged in. Please log in to continue!"));
+        .json(formatResponse("UNAUTHENTICATED. You are not logged in. Please log in to continue!"));
     }
 
     try {
