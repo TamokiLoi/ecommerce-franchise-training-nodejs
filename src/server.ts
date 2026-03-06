@@ -18,6 +18,8 @@ import { ProductFranchiseModule } from "./modules/product-franchise";
 import { RoleModule } from "./modules/role";
 import { UserModule } from "./modules/user";
 import { UserFranchiseRoleModule } from "./modules/user-franchise-role";
+import { PromotionModule } from "./modules/promotion/promotion.module";
+import { VoucherModule } from "./modules/voucher/voucher.module";
 
 dotenv.config();
 validateEnv();
@@ -33,6 +35,8 @@ const roleModule = new RoleModule();
 const customerModule = new CustomerModule();
 const categoryModule = new CategoryModule();
 const productModule = new ProductModule();
+const promotionModule = new PromotionModule();
+const voucherModule = new VoucherModule();
 
 // ===== Dependent modules =====
 const userFranchiseRoleModule = new UserFranchiseRoleModule(userModule, roleModule, franchiseModule);
@@ -69,7 +73,9 @@ const routes = [
   productFranchiseModule.getRoute(),
   productCategoryFranchiseModule.getRoute(),
   inventoryModule.getRoute(),
-
+  promotionModule.getRoute(),
+  voucherModule.getRoute(),
+  
   // Public route
   clientModule.getRoute(),
 ];
