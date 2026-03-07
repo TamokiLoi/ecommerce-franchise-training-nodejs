@@ -5,24 +5,33 @@ import { IShiftQuery } from "./shift.interface";
 import { ShiftRepository } from "./shift.repository";
 import ShiftRoute from "./shift.route";
 import { ShiftService } from "./shift.service";
+import { IShiftAssignmentQuery, ShiftAssignmentModule } from "../shift-assignment";
 
 export class ShiftModule extends BaseModule<ShiftRoute> {
   private readonly shiftQuery: IShiftQuery;
+  private shiftAssignmentQuery!: IShiftAssignmentQuery;
+  private readonly shiftService: ShiftService;
 
   constructor() {
     super();
 
-    // ===== Internal dependencies =====
     const auditLogModule = new AuditLogModule();
     const repo = new ShiftRepository();
 
-    // Core service and Http layer
-    const service = new ShiftService(repo, auditLogModule.getAuditLogger());
-    const controller = new ShiftController(service);
-    this.route = new ShiftRoute(controller);
-    console.log("DEBUG: ShiftModule initialized");
+    this.shiftService = new ShiftService(
+      repo,
+      undefined as any, // tạm thời
+      auditLogModule.getAuditLogger(),
+    );
 
-    this.shiftQuery = service;
+    const controller = new ShiftController(this.shiftService);
+    this.route = new ShiftRoute(controller);
+
+    this.shiftQuery = this.shiftService;
+  }
+
+  public setShiftAssignmentQuery(query: IShiftAssignmentQuery) {
+    this.shiftService.setShiftAssignmentQuery(query);
   }
 
   public getShiftQuery(): IShiftQuery {

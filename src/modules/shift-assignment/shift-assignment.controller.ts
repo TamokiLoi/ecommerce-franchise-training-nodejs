@@ -1,7 +1,7 @@
 import { AuthenticatedUserRequest, BaseCrudController, formatResponse, HttpException, HttpStatus, MSG_BUSINESS } from "../../core";
 import { IShiftAssignment } from "./shift-assignment.interface";
-import { CreateShiftAssignmentDto } from "./dto/create.dto";
-import { UpdateShiftAssignmentDto } from "./dto/update.dto";
+import { CreateShiftAssignmentDto, CreateShiftAssignmentItemsDto } from "./dto/create.dto";
+import { UpdateStatusDto } from "./dto/update.dto";
 import { SearchPaginationItemDto } from "./dto/search.dto";
 import { ShiftAssignmentService } from "./shift-assignment.service";
 import { mapItemToResponse } from "./shift-assignment.mapper";
@@ -10,7 +10,7 @@ import { NextFunction, Request, Response } from "express";
 
 export class ShiftAssignmentController extends BaseCrudController<IShiftAssignment,
 CreateShiftAssignmentDto,
-UpdateShiftAssignmentDto,
+UpdateStatusDto,
 SearchPaginationItemDto,
 ShiftAssignmentItemDto,
 ShiftAssignmentService> {
@@ -33,12 +33,89 @@ ShiftAssignmentService> {
   public changeStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
-      const { status } = req.body;
-      await this.service.changeStatus(id, status, (req as AuthenticatedUserRequest).user?.id || '');
+      const model: UpdateStatusDto = req.body;
 
+      await this.service.changeStatus(
+        id,
+        model,
+        (req as AuthenticatedUserRequest).user?.id || '',
+      );
       res.status(HttpStatus.Success).json(formatResponse<null>(null));
     } catch (error) {
       next(error);
+    }
+  }
+
+  public createItem = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const model: CreateShiftAssignmentDto = req.body;
+      const loggedUserId = (req as AuthenticatedUserRequest).user?.id || '';
+
+      const createdItem = await this.service.createItem(model, loggedUserId);
+
+      res.status(HttpStatus.Success).json(
+        formatResponse(mapItemToResponse(createdItem)),
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public createItems = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const body = req.body as CreateShiftAssignmentItemsDto;
+
+      const loggedUserId =
+        (req as AuthenticatedUserRequest).user?.id || "";
+
+      const createdItems = await this.service.createItems(
+        body.items,
+        loggedUserId,
+      );
+
+      res.status(HttpStatus.Success).json(
+        formatResponse(
+          createdItems.map((item) => mapItemToResponse(item)),
+        ),
+      );
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public  getShiftAssignmentByUserId= async  (req: Request, res: Response, next: NextFunction): Promise<void>=> {
+    try {
+      const { userId } = req.params;
+      const { date } = req.query;
+      const items = await this.service.getAllShiftAssignmentsByUserIdAndDate(userId,date as string);
+      res.status(HttpStatus.Success).json(formatResponse(items.map(mapItemToResponse)));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public getShiftAssignmentByFranchiseId= async (req:Request, res:Response, next:NextFunction): Promise<void> => {
+    try {
+      const { franchiseId } = req.params;
+      const { date } = req.query;
+      const items = await this.service.getAllShiftAssignmentsByFranchiseIdandDate(franchiseId,date as string);
+      res.status(HttpStatus.Success).json(formatResponse(items.map(mapItemToResponse)));
+    } catch (error) {
+      next(error);
+    }
+  } 
+
+  public getShiftAssignedByShiftId= async (req:Request, res:Response, next:NextFunction):Promise<void> =>{
+    try {
+      const {shiftId}= req.params;
+      const items= await this.service.getShiftAssignementByShiftId(shiftId)
+      res.status(HttpStatus.Success).json(formatResponse(items))
+    } catch (error) {
+      next(error)
     }
   }
 }

@@ -1,20 +1,21 @@
-import { IsNotEmpty,IsString, IsMongoId } from "class-validator";
+import { IsNotEmpty,IsString, IsMongoId, Matches } from "class-validator";
+import { REGEX, MSG } from "../../../core";
 
 export default class CreateShiftDto {
-    @IsNotEmpty()
-    @IsString()
-    name:string;
-
     @IsNotEmpty()
     @IsMongoId()
     franchise_id:string;
 
     @IsNotEmpty()
     @IsString()
+    name:string;
+
+    @IsNotEmpty()
+    @Matches(REGEX.TIME_HH_MM, { message: MSG.TIME_HH_MM })
     start_time:string;
 
     @IsNotEmpty()
-    @IsString()
+    @Matches(REGEX.TIME_HH_MM, { message: MSG.TIME_HH_MM })
     end_time:string;
 
 

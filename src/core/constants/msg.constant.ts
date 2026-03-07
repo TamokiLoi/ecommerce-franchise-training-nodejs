@@ -26,4 +26,5 @@ export const MSG_BUSINESS = {
   CANNOT_REMOVE_DEFAULT_ACCOUNT: "Cannot remove default account",
   CANNOT_CHANGE_OWN_STATUS: "Cannot change your own status",
   CANNOT_CHANGE_DEFAULT_ACCOUNT_STATUS: "Cannot change status of default account",
+  SHIFT_IS_ASSIGNED_TO_SOME_USERS: "Shift is assigned to some users",
 };

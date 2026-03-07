@@ -629,6 +629,56 @@ paths:
       responses:
         '200':
           description: Created successfully
+  /api/shift-assignments/bulk:
+    post:
+      summary: Create multiple shift assignments
+      tags:
+        - ShiftAssignment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateShiftAssignmentDto'
+      responses:
+        '200':
+          description: Created successfully
+  /api/shift-assignments/user/{userId}:
+    get:
+      summary: Get shift assignment detail
+      tags:
+        - ShiftAssignment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Get shift assignment successfully
+  /api/shift-assignments/franchise/{franchiseId}:
+    get:
+      summary: Get shift assignment detail
+      tags:
+        - ShiftAssignment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: franchiseId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Get shift assignment successfully
   /api/shift-assignments/{id}:
     get:
       summary: Get shift assignment detail
@@ -645,27 +695,6 @@ paths:
       responses:
         '200':
           description: Get shift assignment successfully
-    put:
-      summary: Update shift assignment
-      tags:
-        - ShiftAssignment
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateShiftAssignmentDto'
-      responses:
-        '200':
-          description: Updated successfully
     delete:
       summary: Soft delete shift assignment
       tags:

@@ -138,6 +138,10 @@ export const API_PATH = {
   SHIFT_ASSIGNMENT_ID: "/api/shift-assignments/:id",
   SHIFT_ASSIGNMENT_RESTORE: "/api/shift-assignments/:id/restore",
   SHIFT_ASSIGNMENT_CHANGE_STATUS: "/api/shift-assignments/:id/status",
+  SHIFT_ASSIGNMENT_BULK: "/api/shift-assignments/bulk",
+  SHIFT_ASSIGNMENT_USER_ID: "/api/shift-assignments/user/:userId",
+  SHIFT_ASSIGNMENT_FRANCHISE_ID: "/api/shift-assignments/franchise/:franchiseId",
+  SHIFT_ASSIGNMENT_BY_SHIFT_ID:"/api/shift-assigments/shift/:shiftId",
   // client
   CLIENT: "/api/clients",
   CLIENT_FRANCHISES: "/api/clients/franchises",

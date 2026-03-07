@@ -18,4 +18,6 @@ export interface IUserFranchiseRole extends Document, IBase {
 
 export interface IUserFranchiseRoleQuery {
   getUserContexts(userId: string): Promise<IUserContext[]>;
+  //TODO CHECK EXIST BY FRANCHISE AND USER
+  checkExistByFranchiseAndUser(franchiseId: string, userId: string): Promise<boolean>;
 }

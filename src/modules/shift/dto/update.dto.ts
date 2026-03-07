@@ -1,4 +1,5 @@
 import { IsString, IsBoolean, IsOptional, Matches } from "class-validator";
+import { MSG, REGEX } from "../../../core";
 
 export default class UpdateShiftDto {
 
@@ -7,20 +8,10 @@ export default class UpdateShiftDto {
   name?: string;
 
   @IsOptional()
-  @IsString()
-  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
+  @Matches(REGEX.TIME_HH_MM, { message: MSG.TIME_HH_MM })
   start_time?: string;
 
   @IsOptional()
-  @IsString()
-  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
+  @Matches(REGEX.TIME_HH_MM, { message: MSG.TIME_HH_MM })
   end_time?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  is_active?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  is_deleted?: boolean;
 }

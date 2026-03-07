@@ -55,7 +55,7 @@ export default class RoleRoute implements IRoute {
      */
     // GET domain:/api/roles/migrate - Migrate roles
     this.router.get(
-      API_PATH.ROLE_MIGRATE,
+      "/migrate",
       authMiddleware(),
       requireGlobalRole(),
       this.controller.migrateRoles,
@@ -118,6 +118,6 @@ export default class RoleRoute implements IRoute {
      *         description: Internal server error
      */
     // GET domain:/api/roles/select - Get all roles for select option
-    this.router.get(API_PATH.ROLE_SELECT, authMiddleware(), this.controller.getAllRoles);
+    this.router.get("/select", authMiddleware(), this.controller.getAllRoles);
   }
 }

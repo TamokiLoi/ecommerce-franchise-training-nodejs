@@ -1,19 +1,31 @@
-import { BaseRepository, formatItemsQuery, HttpException, HttpStatus, MSG_BUSINESS } from "../../core";
+import {
+  BaseRepository,
+  formatItemsQuery,
+  HttpException,
+  HttpStatus,
+  MSG_BUSINESS,
+} from "../../core";
 import ShiftAssignmentSchema from "./shift-assignment.model";
-import { IShiftAssignment, IShiftAssignmentQuery } from "./shift-assignment.interface";
+import {
+  IShiftAssignment,
+  IShiftAssignmentQuery,
+} from "./shift-assignment.interface";
 import { SearchItemDto, SearchPaginationItemDto } from "./dto/search.dto";
-import { Types } from "mongoose";
+import { Date, Types } from "mongoose";
+import { CreateShiftAssignmentDto } from "./dto/create.dto";
 
-export class ShiftAssignmentRepository extends BaseRepository<IShiftAssignment>implements IShiftAssignmentQuery{
+
+export class ShiftAssignmentRepository extends BaseRepository<IShiftAssignment> implements IShiftAssignmentQuery
+{
   constructor() {
-    super(ShiftAssignmentSchema)
+    super(ShiftAssignmentSchema);
   }
 
   public async getById(id: string): Promise<IShiftAssignment | null> {
     return this.findById(id);
   }
 
-  public async getItems(model: SearchPaginationItemDto): Promise<{ data: IShiftAssignment[]; total: number }> {
+  public async doSearch(model: SearchPaginationItemDto): Promise<{ data: IShiftAssignment[]; total: number }> {
     const searchCondition={
       ...new SearchItemDto(),
       ...model.searchCondition,
@@ -81,5 +93,81 @@ export class ShiftAssignmentRepository extends BaseRepository<IShiftAssignment>i
     }
 
   }
+  
+  public async getAllShiftAssignmentsByUserIdAndDate(
+    userId: string,
+    work_date: string,
+  ): Promise<IShiftAssignment[]> {
+    console.log("QUERY USER:", userId);
+    console.log("QUERY DATE:", work_date);
+    if(work_date){
+      return this.model.find({
+        user_id: new Types.ObjectId(userId),
+        work_date: new Date(work_date),
+      });
+    }else{
+      return this.model.find({
+        user_id: new Types.ObjectId(userId),
+      });
+    }
+  }
 
+  public async getByUserId(userId: string): Promise<IShiftAssignment | null> {
+    return this.model.findOne({ user_id: new Types.ObjectId(userId) });
+  }
+
+  public async getAllShiftAssignmentsByFranchiseIdandDate(franchiseId: string,date:string): Promise<IShiftAssignment[]> {
+    if(date){
+      return this.model.find({
+        franchise_id: new Types.ObjectId(franchiseId),
+        work_date: new Date(date),
+      });
+    }else{
+      return this.model.find({
+        franchise_id: new Types.ObjectId(franchiseId),
+      });
+    }
+  }
+
+  public async createItems(items: CreateShiftAssignmentDto[],loggedUserId:string): Promise<IShiftAssignment[]> {
+    const data: Partial<IShiftAssignment>[] = items.map((item) => ({
+      shift_id: new Types.ObjectId(item.shift_id),
+      user_id: new Types.ObjectId(item.user_id),
+      work_date: item.work_date,
+      assigned_by: new Types.ObjectId(loggedUserId),
+    }));
+
+    return this.insertMany(data);
+  }
+
+  public async createItem(item: CreateShiftAssignmentDto,loggedUserId:string): Promise<IShiftAssignment> {
+    const data: Partial<IShiftAssignment> = {
+      shift_id: new Types.ObjectId(item.shift_id),
+      user_id: new Types.ObjectId(item.user_id),
+      work_date: item.work_date,
+      assigned_by: new Types.ObjectId(loggedUserId),
+    };
+
+    return this.create(data);
+  }
+
+  public async getShiftAssignementByShiftId(shiftId: string): Promise<IShiftAssignment | null> {
+    return this.model.findOne({ shift_id: new Types.ObjectId(shiftId) });
+  }
+
+    public async getShiftAssignementsByShiftId(
+    shiftId: string
+  ): Promise<IShiftAssignment[] | null> {
+
+    const result = await this.find({ shift_id: shiftId });
+
+    if (!result) {
+      throw new HttpException(
+        HttpStatus.BAD_REQUEST,
+        "Shift assignment not found"
+      );
+    }
+
+    return result;
+  }
 }

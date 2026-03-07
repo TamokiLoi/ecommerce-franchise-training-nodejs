@@ -37,24 +37,49 @@ const categoryModule = new CategoryModule();
 const productModule = new ProductModule();
 
 // ===== Dependent modules =====
-const userFranchiseRoleModule = new UserFranchiseRoleModule(userModule, roleModule, franchiseModule);
+const userFranchiseRoleModule = new UserFranchiseRoleModule(
+  userModule,
+  roleModule,
+  franchiseModule,
+);
 const authModule = new AuthModule(userFranchiseRoleModule, userModule);
-const categoryFranchiseModule = new CategoryFranchiseModule(categoryModule, franchiseModule);
-const productFranchiseModule = new ProductFranchiseModule(productModule, franchiseModule);
+const categoryFranchiseModule = new CategoryFranchiseModule(
+  categoryModule,
+  franchiseModule,
+);
+const productFranchiseModule = new ProductFranchiseModule(
+  productModule,
+  franchiseModule,
+);
 const productCategoryFranchiseModule = new ProductCategoryFranchiseModule(
   franchiseModule,
   categoryFranchiseModule,
   productFranchiseModule,
 );
-const inventoryModule = new InventoryModule(productModule, productFranchiseModule);
+const inventoryModule = new InventoryModule(
+  productModule,
+  productFranchiseModule,
+);
 const customerAuthModule = new CustomerAuthModule(customerModule);
-const customerFranchiseModule = new CustomerFranchiseModule(franchiseModule, customerModule);
+const customerFranchiseModule = new CustomerFranchiseModule(
+  franchiseModule,
+  customerModule,
+);
 
 // Public module (export to client)
-const clientModule = new ClientModule(franchiseModule, categoryFranchiseModule, productFranchiseModule);
+const clientModule = new ClientModule(
+  franchiseModule,
+  categoryFranchiseModule,
+  productFranchiseModule,
+);
 
 const shiftModule = new ShiftModule();
-const shiftAssignmentModule = new ShiftAssignmentModule();
+const shiftAssignmentModule = new ShiftAssignmentModule(
+  userModule,
+  shiftModule,
+  userFranchiseRoleModule,
+);
+shiftModule.setShiftAssignmentQuery(shiftAssignmentModule.getShiftAssignmentQuery());
 // ===== Register routes =====
 const routes = [
   indexModule.getRoute(),
@@ -77,14 +102,9 @@ const routes = [
   shiftAssignmentModule.getRoute(),
 ];
 
-console.log(`DEBUG: Total routes: ${routes.length}, Shift path: ${shiftModule.getRoute().path}`);
-
-const app = new App(routes);
-app.listen();
-
-  // Public route
-  clientModule.getRoute(),
-];
+console.log(
+  `DEBUG: Total routes: ${routes.length}, Shift path: ${shiftModule.getRoute().path}`,
+);
 
 async function bootstrap() {
   try {

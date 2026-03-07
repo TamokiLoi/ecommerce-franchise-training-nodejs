@@ -22,6 +22,14 @@ export class BaseRepository<T extends Document> {
     return this.toObject(doc);
   }
 
+  public async insertMany(data: Partial<T>[], session?: ClientSession): Promise<T[]> {
+    const docs = session
+      ? await this.model.insertMany(data, { session })
+      : await this.model.insertMany(data);
+
+    return docs.map((doc) => this.toObject(doc));
+  }
+
   public async findById(id: string, is_deleted = false): Promise<T | null> {
     const objectId = new Types.ObjectId(id);
 

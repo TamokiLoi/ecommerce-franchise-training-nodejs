@@ -1,13 +1,8 @@
 import { Types } from "mongoose";
-
-export interface ShiftItemDto {
-     id:string;
+import { BaseItemDto } from "../../../core";
+export interface ShiftItemDto extends BaseItemDto{
      franchise_id:Types.ObjectId;
      name:string;
      start_time:string;
      end_time:string;
-     is_active:boolean;
-     is_deleted:boolean;
-     created_at:string;
-     updated_at:string;
 }

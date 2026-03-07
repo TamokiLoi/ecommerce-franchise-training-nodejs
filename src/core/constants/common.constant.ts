@@ -41,3 +41,10 @@ export const BASE_MODEL_FIELDS = {
   [BaseFieldName.UPDATED_AT]: { type: Date, default: Date.now },
   [BaseFieldName.IS_DELETED]: { type: Boolean, default: false },
 };
+
+export const BASE_MODEL_FIELDS_NO_ACTIVE = {
+  [BaseFieldName.CREATED_AT]: { type: Date, default: Date.now },
+  [BaseFieldName.UPDATED_AT]: { type: Date, default: Date.now },
+  [BaseFieldName.IS_DELETED]: { type: Boolean, default: false },
+};
+

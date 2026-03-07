@@ -1,17 +1,29 @@
-import { BaseCrudService, BaseFieldName, checkEmptyObject, HttpException, HttpStatus, IError, MSG_BUSINESS } from "../../core";
+import {
+  BaseCrudService,
+  BaseFieldName,
+  checkEmptyObject,
+  HttpException,
+  HttpStatus,
+  IError,
+  MSG_BUSINESS,
+} from "../../core";
 import { IShiftAssignment, IShiftAssignmentQuery } from "./shift-assignment.interface";
 import { CreateShiftAssignmentDto } from "./dto/create.dto";
-import { UpdateShiftAssignmentDto } from "./dto/update.dto";
+import { UpdateStatusDto } from "./dto/update.dto";
 import { ShiftAssignmentRepository } from "./shift-assignment.repository";
-import { AuditAction, AuditEntityType, buildAuditDiff, IAuditLogger } from "../audit-log";
+import {
+  AuditAction,
+  AuditEntityType,
+  buildAuditDiff,
+  IAuditLogger,
+} from "../audit-log";
 import { SearchPaginationItemDto } from "./dto/search.dto";
 import { Types } from "mongoose";
 import { ShiftAssignmentStatus } from "../../core/enums/base.enum";
-import { ShiftRepository } from "../shift/shift.repository";
-import { UserRepository } from "../user/user.repository";
 import { IShiftQuery } from "../shift/shift.interface";
 import { IUserQuery } from "../user/user.interface";
-export const AUDIT_FIELDS_ITEM=[
+import {  IUserFranchiseRoleQuery } from "../user-franchise-role";
+export const AUDIT_FIELDS_ITEM = [
   BaseFieldName.USER_ID,
   BaseFieldName.SHIFT_ID,
   BaseFieldName.WORK_DATE,
@@ -20,14 +32,23 @@ export const AUDIT_FIELDS_ITEM=[
   BaseFieldName.STATUS,
 ] as readonly (keyof IShiftAssignment)[];
 
-export class ShiftAssignmentService extends BaseCrudService<IShiftAssignment,CreateShiftAssignmentDto,UpdateShiftAssignmentDto,SearchPaginationItemDto> {
-  private readonly shiftAssignRepo: ShiftAssignmentRepository
-  
-  
-  constructor(repo:ShiftAssignmentRepository, 
-    private readonly shiftQuery:IShiftQuery,
-    private readonly userQuery:IUserQuery,
-    private readonly auditLogger:IAuditLogger) {
+export class ShiftAssignmentService extends BaseCrudService<
+    IShiftAssignment,
+    CreateShiftAssignmentDto,
+    UpdateStatusDto,
+    SearchPaginationItemDto
+  > implements IShiftAssignmentQuery 
+{
+  private readonly shiftAssignRepo: ShiftAssignmentRepository;
+
+  constructor(
+    repo: ShiftAssignmentRepository,
+
+    private readonly shiftQuery: IShiftQuery,
+    private readonly userQuery: IUserQuery,
+    private readonly userFranchiseRoleQuery: IUserFranchiseRoleQuery,
+    private readonly auditLogger: IAuditLogger,
+  ) {
     super(repo);
     this.shiftAssignRepo = repo;
   }
@@ -35,22 +56,101 @@ export class ShiftAssignmentService extends BaseCrudService<IShiftAssignment,Cre
   public async beforeCreate(dto: CreateShiftAssignmentDto): Promise<void> {
     await checkEmptyObject(dto);
 
-    const errors: IError[] = [];
+    const errors: IError[] = [];  
 
+    const user = await this.userQuery.getUserById(dto.user_id.toString());
+    if (!user) {
+      throw new HttpException(HttpStatus.BAD_REQUEST, "User not found");
+
+    }
+
+    if(!dto.assigned_by){
+      throw new HttpException(HttpStatus.BAD_REQUEST, "Assigned by not found");
+    }
+    
+    const shift = await this.shiftQuery.getById(dto.shift_id.toString());
+    if (!shift) {
+      throw new HttpException(HttpStatus.BAD_REQUEST, "Shift not found");
+    }
+    // Get existing assignments of user on the same date
+    const existingAssignments =
+        await this.shiftAssignRepo.getAllShiftAssignmentsByUserIdAndDate(
+          dto.user_id.toString(),
+          dto.work_date,
+        );
+
+      const toMinutes = (time: string) => {
+        const [h, m] = time.split(":").map(Number);
+        return h * 60 + m;
+      };
+
+      const newStart = toMinutes(shift.start_time);
+      const newEnd = toMinutes(shift.end_time);
+
+      for (const assignment of existingAssignments) {
+        const assignedShift = await this.shiftQuery.getById(
+          String(assignment.shift_id),
+        );
+
+        if (!assignedShift) continue;
+
+        const assignedStart = toMinutes(assignedShift.start_time);
+        const assignedEnd = toMinutes(assignedShift.end_time);
+
+        const isOverlap = newStart < assignedEnd && assignedStart < newEnd;
+
+        if (isOverlap) {
+          throw new HttpException(
+            HttpStatus.BAD_REQUEST,
+            "User already assigned to another overlapping shift",
+          );
+        }
+      }
+
+    const franchiseId= await this.shiftQuery.getFranchiseIdbyShiftId(dto.shift_id.toString());
+    if(!franchiseId){
+      throw new HttpException(HttpStatus.BAD_REQUEST, "Franchise not found");
+    }
     // Check if a shift assignment already exists for the same user on the same work date
+    const isExistAssignedUser= await this.shiftAssignRepo.getAllShiftAssignmentsByUserIdAndDate(dto.user_id.toString(),dto.work_date)
+    if(isExistAssignedUser.length > 0){
+      throw new HttpException(HttpStatus.BAD_REQUEST, "Shift assignment already exists for this user on this date");
+    }
+    //TODO lay franchise id user co thuoc franchise do khong
+    const userFranchiseRole = await this.userFranchiseRoleQuery.checkExistByFranchiseAndUser(franchiseId,dto.user_id.toString());
+    if (!userFranchiseRole) {
+      throw new HttpException(HttpStatus.BAD_REQUEST, "User franchise role not found");
+    }
+    const assignedUser= await this.userFranchiseRoleQuery.checkExistByFranchiseAndUser(franchiseId,dto.assigned_by.toString());
+    if (!assignedUser) {
+      throw new HttpException(HttpStatus.BAD_REQUEST, "assigned User franchise role not found");
+
+    }
+
     const isExist = await this.repo.existsByFilter({
       [BaseFieldName.USER_ID]: new Types.ObjectId(dto.user_id),
       [BaseFieldName.WORK_DATE]: dto.work_date,
       [BaseFieldName.SHIFT_ID]: new Types.ObjectId(dto.shift_id),
-    });
-    const shift = await this.shiftQuery.getById(dto.shift_id);
-    const user = await this.userQuery.getUserById(dto.user_id);
+    });   
     if (!shift) {
       errors.push({
         field: BaseFieldName.SHIFT_ID,
         message: MSG_BUSINESS.ITEM_NOT_FOUND_WITH_NAME("Shift"),
       });
     }
+
+    const workDate = new Date(dto.work_date);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // reset time
+
+    if (workDate < today) {
+      throw new HttpException(
+        HttpStatus.BAD_REQUEST,
+        "Cannot assign shift for past dates"
+      );
+    }
+
     if (!user) {
       errors.push({
         field: BaseFieldName.USER_ID,
@@ -58,20 +158,23 @@ export class ShiftAssignmentService extends BaseCrudService<IShiftAssignment,Cre
       });
     }
 
-
     if (isExist) {
       errors.push({
         field: BaseFieldName.WORK_DATE,
-        message: MSG_BUSINESS.ITEM_EXISTS(`Shift assignment for user on work date '${dto.work_date}'`),
+        message: MSG_BUSINESS.ITEM_EXISTS(
+          `Shift assignment for user on work date '${dto.work_date}'`,
+        ),
       });
     }
 
     if (errors.length) {
       throw new HttpException(HttpStatus.BadRequest, "", errors);
     }
-    
   }
-  public async afterCreate(item: IShiftAssignment, loggedUserId: string): Promise<void> {
+  public async afterCreate(
+    item: IShiftAssignment,
+    loggedUserId: string,
+  ): Promise<void> {
     await this.auditLogger.log({
       entityType: AuditEntityType.SHIFT_ASSIGNMENT,
       entityId: String(item._id),
@@ -81,46 +184,39 @@ export class ShiftAssignmentService extends BaseCrudService<IShiftAssignment,Cre
     });
   }
 
-  public async beforeUpdate(current: IShiftAssignment, payload: UpdateShiftAssignmentDto, loggedUserId: string): Promise<void> {
-    await checkEmptyObject(payload);
+  public async beforeUpdate(
+  current: IShiftAssignment,
+  payload: UpdateStatusDto,
+): Promise<void> {
 
-    const errors: IError[] = [];
+  if (payload.status === undefined) return;
 
-    // Check if a shift assignment already exists for the same user on the same work date (exclude self)
-    const isExist = await this.repo.existsByFilter({
-      [BaseFieldName.USER_ID]: new Types.ObjectId(payload.user_id ?? current.user_id),
-      [BaseFieldName.WORK_DATE]: payload.work_date ?? current.work_date,
-      _id: { $ne: current._id },
-    });
-    if (isExist) {
-      errors.push({
-        field: BaseFieldName.WORK_DATE,
-        message: MSG_BUSINESS.ITEM_EXISTS(`Shift assignment for user on work date '${payload.work_date ?? current.work_date}'`),
-      });
-    }
-    if (payload.status !== undefined) {
-      const isValidStatus = Object.values(ShiftAssignmentStatus)
-          .includes(payload.status as ShiftAssignmentStatus);
+  const allowedNextStatuses = [
+    ShiftAssignmentStatus.COMPLETED,
+    ShiftAssignmentStatus.ABSENT,
+  ];
 
-      if (!isValidStatus) {
-          throw new HttpException(
-            HttpStatus.BadRequest,
-            "Invalid status value"
-          );
-      }
-    }
-
-    if (errors.length) {
-      throw new HttpException(HttpStatus.BadRequest, "", errors);
-    }
-
-
-    const hasChange = (Object.keys(payload) as (keyof UpdateShiftAssignmentDto)[]).some((key) => payload[key] !== current[key]);
-
-    if (!hasChange) {
-      throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.NO_DATA_TO_UPDATE);
-    }
+  if (!allowedNextStatuses.includes(payload.status)) {
+    throw new HttpException(
+      HttpStatus.BAD_REQUEST,
+      "Status can only change to COMPLETED or ABSENT",
+    );
   }
+
+  if (current.status !== ShiftAssignmentStatus.ASSIGNED) {
+    throw new HttpException(
+      HttpStatus.BAD_REQUEST,
+      "Status can only be updated from ASSIGNED",
+    );
+  }
+
+  if (current.status === payload.status) {
+    throw new HttpException(
+      HttpStatus.BAD_REQUEST,
+      MSG_BUSINESS.STATUS_NO_CHANGE,
+    );
+  }
+}
 
   public async beforeDelete(item: IShiftAssignment): Promise<void> {
     const isExist = await this.repo.existsByFilter({
@@ -128,8 +224,16 @@ export class ShiftAssignmentService extends BaseCrudService<IShiftAssignment,Cre
       [BaseFieldName.WORK_DATE]: item.work_date,
       _id: { $ne: item._id },
     });
+
+
+
     if (isExist) {
-      throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.ITEM_EXISTS(`Shift assignment for user on work date '${item.work_date}'`));
+      throw new HttpException(
+        HttpStatus.BadRequest,
+        MSG_BUSINESS.ITEM_EXISTS(
+          `Shift assignment for user on work date '${item.work_date}'`,
+        ),
+      );
     }
   }
 
@@ -140,13 +244,25 @@ export class ShiftAssignmentService extends BaseCrudService<IShiftAssignment,Cre
       _id: { $ne: item._id },
     });
     if (isExist) {
-      throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.ITEM_EXISTS(`Shift assignment for user on work date '${item.work_date}'`));
+      throw new HttpException(
+        HttpStatus.BadRequest,
+        MSG_BUSINESS.ITEM_EXISTS(
+          `Shift assignment for user on work date '${item.work_date}'`,
+        ),
+      );
     }
   }
 
-
-  public async afterUpdate(oldItem: IShiftAssignment, newItem: IShiftAssignment, loggedUserId: string): Promise<void> {
-    const { oldData, newData } = buildAuditDiff(oldItem, newItem, AUDIT_FIELDS_ITEM);
+  public async afterUpdate(
+    oldItem: IShiftAssignment,
+    newItem: IShiftAssignment,
+    loggedUserId: string,
+  ): Promise<void> {
+    const { oldData, newData } = buildAuditDiff(
+      oldItem,
+      newItem,
+      AUDIT_FIELDS_ITEM,
+    );
 
     if (newData && Object.keys(newData).length > 0) {
       await this.auditLogger.log({
@@ -160,7 +276,10 @@ export class ShiftAssignmentService extends BaseCrudService<IShiftAssignment,Cre
     }
   }
 
-  public async afterDelete(item: IShiftAssignment, loggedUserId: string): Promise<void> {
+  public async afterDelete(
+    item: IShiftAssignment,
+    loggedUserId: string,
+  ): Promise<void> {
     await this.auditLogger.log({
       entityType: AuditEntityType.SHIFT_ASSIGNMENT,
       entityId: String(item._id),
@@ -171,7 +290,10 @@ export class ShiftAssignmentService extends BaseCrudService<IShiftAssignment,Cre
     });
   }
 
-  public async afterRestore(item: IShiftAssignment, loggedUserId: string): Promise<void> {
+  public async afterRestore(
+    item: IShiftAssignment,
+    loggedUserId: string,
+  ): Promise<void> {
     await this.auditLogger.log({
       entityType: AuditEntityType.SHIFT_ASSIGNMENT,
       entityId: String(item._id),
@@ -182,50 +304,102 @@ export class ShiftAssignmentService extends BaseCrudService<IShiftAssignment,Cre
     });
   }
 
+  public async doSearch(
+    model: SearchPaginationItemDto,
+  ): Promise<{ data: IShiftAssignment[]; total: number }> {
+    return this.shiftAssignRepo.doSearch(model);
+  }
 
-  public async doSearch(model: SearchPaginationItemDto): Promise<{ data: IShiftAssignment[]; total: number }> {
-    return this.shiftAssignRepo.getItems(model);
+  public async createItem(item: CreateShiftAssignmentDto,loggedUserId:string): Promise<IShiftAssignment> {
+    await this.beforeCreate(item);
+    const createdItem = await this.repo.create(item);
+    await this.afterCreate(createdItem, loggedUserId);
+    return createdItem;
   }
 
   public async getById(id: string): Promise<IShiftAssignment | null> {
     return this.shiftAssignRepo.getById(id);
   }
 
-public async changeStatus(id: string, model: UpdateShiftAssignmentDto, loggedUserId: string): Promise<void> {
-    const { status } = model;
+  public async changeStatus(
+  id: string,
+  model: UpdateStatusDto,
+  loggedUserId: string,
+): Promise<void> {
 
-    // 1. Get item
-    const currentItem = await this.repo.findById(id);
-    if (!currentItem) {
-      throw new HttpException(HttpStatus.NotFound, MSG_BUSINESS.ITEM_NOT_FOUND);
-    }
+  const currentItem = await this.repo.findById(id);
 
-    // 2. Check change status
-    if (currentItem.status === status) {
-      throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.STATUS_NO_CHANGE);
-    }
-     if (status !== undefined) {
-      const isValidStatus = Object.values(ShiftAssignmentStatus)
-          .includes(status as ShiftAssignmentStatus);
-
-      if (!isValidStatus) {
-          throw new HttpException(
-            HttpStatus.BadRequest,
-            "Invalid status value"
-          );
-      } 
-    }
-    // 3. Update status
-    await this.repo.update(id, { status });
-
-    // 4. Audit log
-    await this.auditLogger.log({
-      entityType: AuditEntityType.SHIFT_ASSIGNMENT,
-      entityId: id,
-      action: AuditAction.CHANGE_STATUS,
-      oldData: { status: currentItem.status },
-      newData: { status },
-      changedBy: loggedUserId,
-    });
+  if (!currentItem) {
+    throw new HttpException(
+      HttpStatus.NotFound,
+      MSG_BUSINESS.ITEM_NOT_FOUND,
+    );
   }
+  
+
+  await this.beforeUpdate(currentItem, model);
+  console.log("🚀 ~ ShiftAssignmentService ~ changeStatus ~ model:", model)
+  
+  const { status } = model;
+  console.log("🚀 ~ ShiftAssignmentService ~ changeStatus ~ status:", status);
+  await this.repo.update(id, { status });
+
+  await this.auditLogger.log({
+    entityType: AuditEntityType.SHIFT_ASSIGNMENT,
+    entityId: id,
+    action: AuditAction.CHANGE_STATUS,
+    oldData: { status: currentItem.status },
+    newData: { status },
+    changedBy: loggedUserId,
+  });
 }
+
+  public async getAllShiftAssignmentsByFranchiseIdandDate(franchiseId: string,date:string): Promise<IShiftAssignment[]> {
+    return this.shiftAssignRepo.getAllShiftAssignmentsByFranchiseIdandDate(franchiseId,date);
+  }
+
+  public async getAllShiftAssignmentsByUserIdAndDate(
+    userId: string,
+    date: string,
+  ): Promise<IShiftAssignment[]> {
+    return this.shiftAssignRepo.getAllShiftAssignmentsByUserIdAndDate(userId,date);
+  }
+
+  public async createItems(
+    items: CreateShiftAssignmentDto[],
+    loggedUserId: string,
+  ): Promise<IShiftAssignment[]> {
+
+    const data: Partial<IShiftAssignment>[] = new Array(items.length);
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      await this.beforeCreate(item);
+
+      data[i] = {
+        user_id: new Types.ObjectId(item.user_id),
+        shift_id: new Types.ObjectId(item.shift_id),
+        work_date: item.work_date,
+        assigned_by: new Types.ObjectId(loggedUserId),
+        status: ShiftAssignmentStatus.ASSIGNED,
+      };
+    }
+
+    const createdItems = await this.repo.insertMany(data);
+
+    for (let i = 0; i < createdItems.length; i++) {
+      await this.afterCreate(createdItems[i], loggedUserId);
+    }
+
+    return createdItems;
+  }
+
+  public async getShiftAssignementByShiftId(shiftId: string): Promise<IShiftAssignment | null> {
+    return this.shiftAssignRepo.getShiftAssignementByShiftId(shiftId);
+  }
+  
+}
+
+// TODO get all shift assignments
+// get all shift assignment by franchise_id ( optional date)
+// get all shift assignment by userid ( optional date)
