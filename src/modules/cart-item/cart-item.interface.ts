@@ -12,9 +12,26 @@ export interface ICartItem extends Document, IBase {
   [BaseFieldName.LINE_TOTAL]: number;
   [BaseFieldName.FINAL_LINE_TOTAL]: number;
   [BaseFieldName.OPTIONS_HASH]: string;
+  [BaseFieldName.OPTIONS]: ICartItemOption[];
+}
+
+export interface ICartItemOption {
+  [BaseFieldName.PRODUCT_FRANCHISE_ID]: Types.ObjectId;
+  [BaseFieldName.QUANTITY]: number;
+  [BaseFieldName.PRICE_SNAPSHOT]: number;
+  [BaseFieldName.DISCOUNT_AMOUNT]?: number;
+  [BaseFieldName.FINAL_PRICE]?: number;
 }
 
 export interface ICartItemQuery {
+  getById(id: string): Promise<ICartItem | null>;
+  findByIdForUpdate(id: string): Promise<ICartItem | null>;
   getCartItem(payload: ICartItemDto): Promise<ICartItem | null>;
   createCartItem(payload: ICreateCartItemDto): Promise<ICartItem>;
+  findDuplicateCartItem(payload: {
+    cart_id: Types.ObjectId;
+    product_franchise_id: Types.ObjectId;
+    options_hash: string;
+    exclude_id: Types.ObjectId;
+  }): Promise<ICartItem | null>;
 }

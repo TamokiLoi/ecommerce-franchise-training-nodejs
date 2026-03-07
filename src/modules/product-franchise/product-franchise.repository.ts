@@ -47,12 +47,12 @@ export class ProductFranchiseRepository extends BaseRepository<IProductFranchise
 
     // 1. Filter by product_id
     if (product_id) {
-      matchQuery.product_id = product_id;
+      matchQuery.product_id = new Types.ObjectId(product_id);
     }
 
     // 2. Filter by franchise_id
     if (franchise_id) {
-      matchQuery.franchise_id = franchise_id;
+      matchQuery.franchise_id = new Types.ObjectId(franchise_id);
     }
 
     // 3. Filter by size (string, exact or regex)
@@ -138,6 +138,10 @@ export class ProductFranchiseRepository extends BaseRepository<IProductFranchise
 
   // TODO: do after
   // B: Business / Menu
+
+  public async findItemsActiveByIds(ids: string[]): Promise<IProductFranchise[]> {
+    return this.model.find({ _id: { $in: ids }, is_active: true });
+  }
 
   public async getMenuByFranchise(franchiseId: string, categoryId?: string): Promise<any[]> {
     if (!Types.ObjectId.isValid(franchiseId)) return [];

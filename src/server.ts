@@ -18,6 +18,8 @@ import { ProductFranchiseModule } from "./modules/product-franchise";
 import { RoleModule } from "./modules/role";
 import { UserModule } from "./modules/user";
 import { UserFranchiseRoleModule } from "./modules/user-franchise-role";
+import { CartItemModule } from "./modules/cart-item";
+import { CartModule } from "./modules/cart";
 
 dotenv.config();
 validateEnv();
@@ -50,6 +52,8 @@ const customerFranchiseModule = new CustomerFranchiseModule(franchiseModule, cus
 
 // Public module (export to client)
 const clientModule = new ClientModule(franchiseModule, categoryFranchiseModule, productFranchiseModule);
+const cartItemModule = new CartItemModule();
+const cartModule = new CartModule(customerModule, franchiseModule, productFranchiseModule, cartItemModule);
 
 // ===== Register routes =====
 const routes = [
@@ -72,6 +76,8 @@ const routes = [
 
   // Public route
   clientModule.getRoute(),
+  cartItemModule.getRoute(),
+  cartModule.getRoute(),
 ];
 
 async function bootstrap() {

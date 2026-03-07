@@ -6,6 +6,8 @@ export interface CartItemDto extends BaseItemDto {
   staff_id?: string;
   staff_name?: string;
   status: string;
+  address?: string;
+  phone?: string;
   voucher_id?: string;
   voucher_code?: string;
   loyalty_points_used?: number;

@@ -134,4 +134,16 @@ export const API_PATH = {
   CLIENT_PRODUCTS: "/api/clients/products",
   CLIENT_PRODUCT_DETAIL: "/api/clients/franchises/:franchiseId/products/:productId",
   CLIENT_FRANCHISE_DETAIL: "/api/clients/franchises/:franchiseId",
+
+  // cart, cartItem
+  CART: "/api/carts",
+  CART_ID: "/api/carts/:id",
+  CART_ITEM: "/api/carts/items",
+  CART_ITEM_ID: "/api/carts/items/:cartItemId",
+  UPDATE_OPTION_ITEM: "/api/carts/items/update-option",
+  REMOVE_OPTION_ITEM: "/api/carts/items/remove-option",
+  ADD_CART_ITEM: "/api/carts/items",
+  CART_VOUCHER: "/api/carts/voucher",
+  APPLY_VOUCHER: "/api/carts/apply-voucher",
+  REMOVE_VOUCHER: "/api/carts/remove-voucher/:cartItemId",
 };

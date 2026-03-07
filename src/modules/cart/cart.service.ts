@@ -1,26 +1,29 @@
 import { Types } from "mongoose";
 import {
-  BaseCrudService,
-  BaseFieldName,
-  BaseRole,
-  CartStatus,
-  CustomerAuthPayload,
-  HttpException,
-  HttpStatus,
-  MSG_BUSINESS,
-  UserAuthPayload,
-  UserType,
+    BaseCrudService,
+    BaseFieldName,
+    BaseRole,
+    CartStatus,
+    CustomerAuthPayload,
+    HttpException,
+    HttpStatus,
+    MSG_BUSINESS,
+    UserAuthPayload,
 } from "../../core";
 import { IAuditLogger } from "../audit-log";
 import { ICartItemQuery } from "../cart-item";
 import { ICustomerQuery } from "../customer";
 import { IFranchiseQuery } from "../franchise";
 import { IProductFranchiseQuery } from "../product-franchise";
+import { CartOptionItemService } from "./cart-option-item.service";
+import { CartHelper } from "./cart.helper";
 import { ICart } from "./cart.interface";
 import { CartRepository } from "./cart.repository";
-import { AddCartItemOptionDto, AddToCartDto, CreateCartDto } from "./dto/create.dto";
+import { AddToCartDto, CreateCartDto } from "./dto/create.dto";
+import { UpdateQuantityOptionItemDto } from "./dto/optionItem.dto";
 import { SearchPaginationItemDto } from "./dto/search.dto";
-import UpdateCartDto from "./dto/update.dto";
+import { UpdateCartDto } from "./dto/update.dto";
+import { CartItemService } from "./cart-item.service";
 
 const AUDIT_FIELDS_ITEM = [
   BaseFieldName.FRANCHISE_ID,
@@ -34,8 +37,11 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
   constructor(
     repo: CartRepository,
     private readonly auditLogger: IAuditLogger,
-    private readonly franchiseQuery: IFranchiseQuery,
+    private readonly cartHelper: CartHelper,
+    private readonly cartItemService: CartItemService,
+    private readonly cartOptionItemService: CartOptionItemService,
     private readonly customerQuery: ICustomerQuery,
+    private readonly franchiseQuery: IFranchiseQuery,
     private readonly productFranchiseQuery: IProductFranchiseQuery,
     private readonly cartItemQuery: ICartItemQuery,
   ) {
@@ -78,44 +84,44 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
   public async addProductToCart(
     payload: AddToCartDto,
     loggedUser: UserAuthPayload | CustomerAuthPayload,
-  ): Promise<ICart> {
-    // Step 0: Check logged user is Staff or Customer
-    if (loggedUser.type === UserType.USER) {
-      payload.staff_id = loggedUser.id;
-      if (!payload.customer_id) {
-        throw new HttpException(HttpStatus.BadRequest, "Customer id is required");
-      }
-    } else if (loggedUser.type === UserType.CUSTOMER) {
-      payload.customer_id = loggedUser.id;
-    }
+  ): Promise<ICart | null> {
+    /**
+     * STEP 0 — Resolve customer / staff
+     */
+    this.cartHelper.resolveCustomerAndStaff(payload, loggedUser);
 
-    const { franchise_id, customer_id, staff_id, product_franchise_id, quantity, options } = payload;
+    const { franchise_id, customer_id, product_franchise_id, quantity, options, address, phone } = payload;
 
-    // Step 1: Validate franchise
+    /**
+     * STEP 1 — Validate franchise
+     */
     const franchise = await this.franchiseQuery.getById(franchise_id);
     if (!franchise) {
       throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.ITEM_NOT_FOUND_WITH_NAME("Franchise"));
     }
 
-    // Step 2:Validate productFranchise
+    /**
+     * STEP 2 — Validate main product
+     */
     const productFranchise = await this.productFranchiseQuery.getItemActive(product_franchise_id);
 
     if (!productFranchise || productFranchise.franchise_id.toString() !== franchise_id) {
       throw new HttpException(HttpStatus.BadRequest, "Product not available in this franchise");
     }
 
-    // Step 3: Validate options
-    if (options?.length) {
-      for (const option of options) {
-        const topping = await this.productFranchiseQuery.getItemActive(option.product_franchise_id);
-        if (!topping) {
-          throw new HttpException(HttpStatus.BadRequest, "Topping is not available in this franchise");
-        }
-      }
-    }
-    const { normalizedOptions, optionsHash } = this.buildOptionsHash(options);
+    /**
+     * STEP 3 — Validate toppings
+     */
+    const toppingsMap = await this.cartHelper.validateAndGetToppings(options, franchise_id);
 
-    // Step 4: Create active cart
+    /**
+     * STEP 4 — Normalize options
+     */
+    const { normalizedOptions, optionsHash } = this.cartHelper.buildOptionsHash(options);
+
+    /**
+     * STEP 5 — Get or create cart
+     */
     let cart = await this.cartRepo.getCartStatusActive(customer_id, franchise_id);
 
     if (!cart) {
@@ -123,52 +129,81 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
         customer_id: new Types.ObjectId(customer_id),
         franchise_id: new Types.ObjectId(franchise_id),
         status: CartStatus.ACTIVE,
+        address: address,
+        phone: phone,
       });
     }
 
-    // Step 5: Update cart item
+    /**
+     * STEP 6 — Check existing cart item
+     */
     const existingItem = await this.cartItemQuery.getCartItem({
       cart_id: cart._id,
       product_franchise_id: productFranchise._id,
       options_hash: optionsHash,
     });
 
+    /**
+     * STEP 7 — Build cart item options
+     */
+    const optionDocs = this.cartHelper.buildCartItemOptions(normalizedOptions, toppingsMap);
+
+    /**
+     * STEP 8 — Create / Update cart item
+     */
     if (existingItem) {
-      existingItem.quantity += payload.quantity;
+      existingItem.quantity += quantity;
+
       await existingItem.save();
     } else {
       await this.cartItemQuery.createCartItem({
         cart_id: cart._id,
         product_franchise_id: productFranchise._id,
-        quantity: payload.quantity,
+        quantity,
         product_cart_price: productFranchise.price_base,
         options_hash: optionsHash,
+        options: optionDocs,
       });
     }
+
+    /**
+     * STEP 9 — Return cart detail
+     */
+    return this.cartRepo.getCartDetail(cart._id);
   }
 
-  // Private helper
-  private buildOptionsHash(options?: AddCartItemOptionDto[]): {
-    normalizedOptions: { product_franchise_id: string; quantity: number }[];
-    optionsHash: string;
-  } {
-    if (!options?.length) {
-      return { normalizedOptions: [], optionsHash: "" };
+  public async getCartDetail(cartId: string): Promise<ICart> {
+    const item = await this.cartRepo.getCartDetail(new Types.ObjectId(cartId));
+    if (!item) {
+      throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.ITEM_NOT_FOUND);
     }
+    return item;
+  }
 
-    const optionMap = new Map<string, number>();
+  public async getActiveCart(customerId: string, franchiseId: string): Promise<ICart | null> {
+    const cart = await this.cartRepo.getCartStatusActive(customerId, franchiseId);
+    if (!cart) return null;
+    return this.cartRepo.getCartDetail(cart._id);
+  }
 
-    for (const option of options) {
-      const currentQty = optionMap.get(option.product_franchise_id) || 0;
-      optionMap.set(option.product_franchise_id, currentQty + option.quantity);
-    }
+  public async removeCartItem(
+    cartItemId: string,
+    loggedUser: UserAuthPayload | CustomerAuthPayload,
+  ) {
+    return this.cartItemService.removeCartItem(cartItemId, loggedUser);
+  }
 
-    const normalizedOptions = Array.from(optionMap.entries())
-      .map(([id, qty]) => ({ product_franchise_id: id, quantity: qty }))
-      .sort((a, b) => a.product_franchise_id.localeCompare(b.product_franchise_id));
+  public async updateOptionItem(
+    payload: UpdateQuantityOptionItemDto,
+    loggedUser: UserAuthPayload | CustomerAuthPayload,
+  ) {
+    return this.cartOptionItemService.updateOptionItem(payload, loggedUser);
+  }
 
-    const optionsHash = normalizedOptions.map((o) => `${o.product_franchise_id}:${o.quantity}`).join("-");
-
-    return { normalizedOptions, optionsHash };
+  public async removeOptionItem(
+    payload: UpdateQuantityOptionItemDto,
+    loggedUser: UserAuthPayload | CustomerAuthPayload,
+  ) {
+    return this.cartOptionItemService.removeOptionItem(payload, loggedUser);
   }
 }

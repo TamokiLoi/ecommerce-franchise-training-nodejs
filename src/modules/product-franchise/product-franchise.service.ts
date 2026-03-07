@@ -268,8 +268,12 @@ export class ProductFranchiseService
     return this.productFranchiseRepo.getPublicProducts(franchiseId, categoryId);
   }
 
-  public async getPublicProductDetail(franchiseId: string, productId: string, ): Promise<PublicProductDetailDto | null> {
+  public async getPublicProductDetail(franchiseId: string, productId: string): Promise<PublicProductDetailDto | null> {
     return this.productFranchiseRepo.getPublicProductDetail(franchiseId, productId);
+  }
+
+  public async getItemsActiveByIds(ids: string[]): Promise<IProductFranchise[]> {
+    return this.productFranchiseRepo.findItemsActiveByIds(ids);
   }
 
   // ==== Validation helpers =====

@@ -27,24 +27,34 @@ const CartSchemaEntity = new Schema({
     required: false,
   },
   [BaseFieldName.VOUCHER_CODE]: { type: String, required: false },
+  [BaseFieldName.ADDRESS]: { type: String, required: false },
+  [BaseFieldName.PHONE]: { type: String, required: false },
 
   // --- Loyalty ---
   [BaseFieldName.LOYALTY_POINTS_USED]: { type: Number, default: 0 }, // tổng point đã dùng cho cart này
 
   // --- Pricing ---
-  [BaseFieldName.PROMOTION_DISCOUNT]: { type: mongoose.Schema.Types.Decimal128, default: 0 },
-  [BaseFieldName.VOUCHER_DISCOUNT]: { type: mongoose.Schema.Types.Decimal128, default: 0 },
-  [BaseFieldName.LOYALTY_DISCOUNT]: { type: mongoose.Schema.Types.Decimal128, default: 0 },
-  [BaseFieldName.SUBTOTAL_AMOUNT]: { type: mongoose.Schema.Types.Decimal128, default: 0 }, // tổng tiền trước khi áp các mã giảm
-  [BaseFieldName.FINAL_AMOUNT]: { type: mongoose.Schema.Types.Decimal128, default: 0 }, // tổng tiền thật phải trả
+  [BaseFieldName.PROMOTION_DISCOUNT]: { type: Number, default: 0 },
+  [BaseFieldName.VOUCHER_DISCOUNT]: { type: Number, default: 0 },
+  [BaseFieldName.LOYALTY_DISCOUNT]: { type: Number, default: 0 },
+  [BaseFieldName.SUBTOTAL_AMOUNT]: { type: Number, default: 0 }, // tổng tiền trước khi áp các mã giảm
+  [BaseFieldName.FINAL_AMOUNT]: { type: Number, default: 0 }, // tổng tiền thật phải trả
 
   ...BASE_MODEL_FIELDS,
 });
+
+CartSchemaEntity.index({ customer_id: 1 });
 
 CartSchemaEntity.index(
   { customer_id: 1, franchise_id: 1, status: 1 },
   { unique: true, partialFilterExpression: { status: CartStatus.ACTIVE } },
 );
+
+CartSchemaEntity.virtual("cart_items", {
+  ref: COLLECTION_NAME.CART_ITEM,
+  localField: "_id",
+  foreignField: "cart_id",
+});
 
 export type CartDocument = HydratedDocument<ICart>;
 const CartSchema = mongoose.model<CartDocument>(COLLECTION_NAME.CART, CartSchemaEntity);

@@ -18,4 +18,5 @@ export interface IProductFranchiseQuery {
   getMenuByFranchise(franchiseId: string, categoryId?: string): Promise<PublicProductItemDto[]>;
   getPublicProducts(franchiseId: string, categoryId?: string): Promise<PublicProductItemDto[]>;
   getPublicProductDetail(franchiseId: string, productId: string): Promise<PublicProductDetailDto | null>;
+  getItemsActiveByIds(ids: string[]): Promise<IProductFranchise[]>;
 }
