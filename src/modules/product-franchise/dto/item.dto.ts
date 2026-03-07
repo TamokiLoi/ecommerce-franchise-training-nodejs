@@ -1,12 +1,22 @@
 import { BaseItemDto } from "../../../core/dto";
 
-export interface ProductFranchiseItemDto extends BaseItemDto {
+
+export interface ProductFranchiseItemDto extends BaseItemDto, PublicProductFranchiseItemDto {
   product_id: string;
   product_name: string;
   franchise_id: string;
   franchise_name: string;
   size: string;
   price_base: number;
+}
+
+export interface PublicProductFranchiseItemDto {
+  product_id: string;
+  product_name: string;
+  product_sku: string;
+  franchise_id: string;
+  franchise_name: string;
+  franchise_code: string;
 }
 
 export interface PublicProductItemDto {

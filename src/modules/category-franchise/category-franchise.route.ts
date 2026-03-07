@@ -28,6 +28,7 @@ export default class CategoryFranchiseRoute implements IRoute {
     this.router.get(
       API_PATH.GET_CATEGORIES_BY_FRANCHISE,
       authMiddleware(),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
       this.controller.getByFranchise,
     );
 

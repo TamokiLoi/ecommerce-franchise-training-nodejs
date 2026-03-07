@@ -24,6 +24,22 @@ export default class ProductFranchiseController extends BaseCrudController<
     super(service, mapItemToResponse);
   }
 
+  /**
+   * Get products by franchise
+   */
+  public getByFranchise = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { franchiseId } = req.params;
+      const { productId, onlyActive } = req.query;
+      const productIdCurrent = typeof productId === "string" && productId !== "" ? productId : undefined;
+      const isActive = typeof onlyActive === "string" ? onlyActive === "true" : undefined;
+      const result = await this.service.getItemsByFranchise(franchiseId, productIdCurrent, isActive);
+      res.status(HttpStatus.Success).json(formatResponse(result));
+    } catch (error) {
+      next(error);
+    }
+  };
+
   public changeStatus = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;

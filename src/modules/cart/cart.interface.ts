@@ -8,6 +8,8 @@ export interface ICart extends Document, IBase {
   [BaseFieldName.CUSTOMER_NAME]?: string;
   [BaseFieldName.CUSTOMER_EMAIL]?: string;
   [BaseFieldName.CUSTOMER_PHONE]?: string;
+  [BaseFieldName.ADDRESS]?: string;
+  [BaseFieldName.PHONE]?: string;
   [BaseFieldName.STAFF_ID]?: Types.ObjectId;
   [BaseFieldName.STAFF_NAME]?: string;
   [BaseFieldName.STATUS]: string;

@@ -1,3 +1,4 @@
+import { BaseItemSelectDto } from "../../core";
 import { MSG_BUSINESS } from "../../core/constants";
 import { BaseFieldName, HttpStatus } from "../../core/enums";
 import { HttpException } from "../../core/exceptions";
@@ -162,6 +163,18 @@ export class ProductService
 
   protected async doSearch(dto: SearchPaginationItemDto): Promise<{ data: IProduct[]; total: number }> {
     return this.productRepo.getItems(dto);
+  }
+
+  // Support for api get all products (no pagination, no filter)
+  public async getAllItems(): Promise<BaseItemSelectDto[]> {
+    const items = await this.repo.findAll();
+    const newItems = items.map((item) => ({
+      value: String(item._id),
+      code: item.SKU,
+      name: item.name,
+    }));
+
+    return newItems;
   }
 
   // ===== End CRUD =====

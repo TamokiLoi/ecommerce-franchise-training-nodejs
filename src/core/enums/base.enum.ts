@@ -125,4 +125,7 @@ export enum BaseFieldName {
   LINE_TOTAL = "line_total",
   FINAL_LINE_TOTAL = "final_line_total",
   OPTIONS_HASH = "options_hash",
+  OPTIONS = "options",
+  PRICE_SNAPSHOT = "price_snapshot",
+  FINAL_PRICE = "final_price",
 }

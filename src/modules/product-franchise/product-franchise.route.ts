@@ -1,5 +1,10 @@
 import { Router } from "express";
-import { API_PATH, SYSTEM_ADMIN_ROLES, SYSTEM_AND_FRANCHISE_ALL_ROLES, SYSTEM_AND_FRANCHISE_MANAGER_ROLES } from "../../core/constants";
+import {
+  API_PATH,
+  SYSTEM_ADMIN_ROLES,
+  SYSTEM_AND_FRANCHISE_ALL_ROLES,
+  SYSTEM_AND_FRANCHISE_MANAGER_ROLES,
+} from "../../core/constants";
 import { IRoute } from "../../core/interfaces";
 import ProductFranchiseController from "./product-franchise.controller";
 import { authMiddleware, requireMoreContext, validationMiddleware } from "../../core/middleware";
@@ -23,6 +28,14 @@ export default class ProductFranchiseRoute implements IRoute {
      *   - name: Product Franchise
      *     description: Product Franchise related endpoints
      */
+
+    // GET /api/product-franchises/franchise/:franchiseId -> get products by franchise
+    this.router.get(
+      API_PATH.GET_PRODUCTS_BY_FRANCHISE,
+      authMiddleware(),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
+      this.controller.getByFranchise,
+    );
 
     // PATCH domain:/api/product-franchises/:id/status - Change status
     this.router.patch(

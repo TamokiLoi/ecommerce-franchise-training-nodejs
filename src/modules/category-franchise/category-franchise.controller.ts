@@ -31,7 +31,8 @@ export class CategoryFranchiseController extends BaseCrudController<
   public getByFranchise = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { franchiseId } = req.params;
-      const isActive = req.query.is_active === undefined ? undefined : req.query.is_active === "true";
+      const { onlyActive } = req.query;
+      const isActive = onlyActive === undefined ? undefined : onlyActive === "true";
       const result = await this.service.getCategoriesByFranchise(franchiseId, isActive);
       res.status(HttpStatus.Success).json(formatResponse(result));
     } catch (error) {

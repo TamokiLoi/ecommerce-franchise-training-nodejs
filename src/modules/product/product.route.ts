@@ -23,6 +23,14 @@ export default class ProductRoute implements IRoute {
      *     description: Product related endpoints
      */
 
+    // GET domain:/api/products/select - Get all products for select option
+    this.router.get(
+      API_PATH.PRODUCT_SELECT,
+      authMiddleware(),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
+      this.controller.getAllItems,
+    );
+
     // POST domain:/api/products - Create product
     this.router.post(
       this.path,
