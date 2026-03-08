@@ -20,6 +20,8 @@ import { ShiftModule } from "./modules/shift";
 import { UserModule } from "./modules/user";
 import { UserFranchiseRoleModule } from "./modules/user-franchise-role";
 import { ShiftAssignmentModule } from "./modules/shift-assignment";
+import { PromotionModule } from "./modules/promotion/promotion.module";
+import { VoucherModule } from "./modules/voucher/voucher.module";
 import { CartItemModule } from "./modules/cart-item";
 import { CartModule } from "./modules/cart";
 
@@ -37,6 +39,8 @@ const roleModule = new RoleModule();
 const customerModule = new CustomerModule();
 const categoryModule = new CategoryModule();
 const productModule = new ProductModule();
+const promotionModule = new PromotionModule();
+const voucherModule = new VoucherModule();
 
 // ===== Dependent modules =====
 const userFranchiseRoleModule = new UserFranchiseRoleModule(
@@ -98,9 +102,11 @@ const routes = [
   productFranchiseModule.getRoute(),
   productCategoryFranchiseModule.getRoute(),
   inventoryModule.getRoute(),
+  promotionModule.getRoute(),
+  voucherModule.getRoute(),
   shiftModule.getRoute(),
   shiftAssignmentModule.getRoute(),
-
+  
   // Public route
   clientModule.getRoute(),
   cartItemModule.getRoute(),

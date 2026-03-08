@@ -89,6 +89,20 @@ export const API_PATH = {
   PRODUCT_ID: "/api/products/:id",
   PRODUCT_RESTORE: "/api/products/:id/restore",
   PRODUCT_SELECT: "/api/products/select",
+  
+  // promotions
+  PROMOTION: "/api/promotions",
+  PROMOTION_SEARCH: "/api/promotions/search",
+  PROMOTION_ID: "/api/promotions/:id",
+  PROMOTION_RESTORE: "/api/promotions/:id/restore",
+  PROMOTION_CHANGE_STATUS: "/api/promotions/:id/status",
+
+  // vouchers
+  VOUCHER: "/api/vouchers",
+  VOUCHER_SEARCH: "/api/vouchers/search",
+  VOUCHER_ID: "/api/vouchers/:id",
+  VOUCHER_RESTORE: "/api/vouchers/:id/restore",
+  VOUCHER_CHANGE_STATUS: "/api/vouchers/:id/status",
 
   // category franchises
   CATEGORY_FRANCHISE: "/api/category-franchises", // assign categories to franchise
