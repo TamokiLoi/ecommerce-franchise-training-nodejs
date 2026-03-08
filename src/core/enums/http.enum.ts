@@ -11,4 +11,5 @@ export enum HttpStatus {
     TooManyRequests = 429,
     InternalServerError = 500,
     NotImplemented = 501,
+    BAD_REQUEST,
 }

@@ -22,4 +22,6 @@ export const COLLECTION_NAME = {
   CATEGORY_FRANCHISE: "CategoryFranchise",
   PRODUCT_FRANCHISE: "ProductFranchise",
   PRODUCT_CATEGORY_FRANCHISE: "ProductCategoryFranchise",
+  SHIFT: "Shift",
+  SHIFT_ASSIGNMENT: "ShiftAssignment",
 };

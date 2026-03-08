@@ -6,6 +6,12 @@ export enum UserType {
   CUSTOMER = "customer",
 }
 
+export const BaseModelNoActive = {
+  created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now },
+  is_deleted: { type: Boolean, default: false },
+}
+
 export interface AuthenticatedUserRequest extends Request {
   user: {
     id: string;

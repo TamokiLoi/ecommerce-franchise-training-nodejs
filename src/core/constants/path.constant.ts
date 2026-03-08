@@ -142,6 +142,22 @@ export const API_PATH = {
   INVENTORY_LOGS: "/api/inventories/logs/:inventoryId",
   INVENTORY_LOGS_BY_REFERENCE: "/api/inventories/logs/reference",
 
+  SHIFT: "/api/shifts",
+  SHIFT_SEARCH: "/api/shifts/search",
+  SHIFT_ID: "/api/shifts/:id",
+  SHIFT_RESTORE: "/api/shifts/:id/restore",
+  SHIFT_CHANGE_STATUS: "/api/shifts/:id/status",
+  SHIFT_SELECT: "/api/shifts/select",
+
+  SHIFT_ASSIGNMENT: "/api/shift-assignments",
+  SHIFT_ASSIGNMENT_SEARCH: "/api/shift-assignments/search",
+  SHIFT_ASSIGNMENT_ID: "/api/shift-assignments/:id",
+  SHIFT_ASSIGNMENT_RESTORE: "/api/shift-assignments/:id/restore",
+  SHIFT_ASSIGNMENT_CHANGE_STATUS: "/api/shift-assignments/:id/status",
+  SHIFT_ASSIGNMENT_BULK: "/api/shift-assignments/bulk",
+  SHIFT_ASSIGNMENT_USER_ID: "/api/shift-assignments/user/:userId",
+  SHIFT_ASSIGNMENT_FRANCHISE_ID: "/api/shift-assignments/franchise/:franchiseId",
+  SHIFT_ASSIGNMENT_BY_SHIFT_ID:"/api/shift-assigments/shift/:shiftId",
   // client
   CLIENT: "/api/clients",
   CLIENT_FRANCHISES: "/api/clients/franchises",

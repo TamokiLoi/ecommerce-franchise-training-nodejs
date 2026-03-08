@@ -57,6 +57,10 @@ tags:
     description: Product Franchise related endpoints
   - name: Product
     description: Product related endpoints
+  - name: ShiftAssignment
+    description: Shift assignment related endpoints
+  - name: Shift
+    description: Shift related endpoints
 paths:
   /:
     get:
@@ -163,3 +167,339 @@ paths:
           description: Unauthorized
         '500':
           description: Internal server error
+  /api/shift-assignments/search:
+    post:
+      summary: Search shift assignments with pagination
+      tags:
+        - ShiftAssignment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchPaginationItemDto'
+      responses:
+        '200':
+          description: Get shift assignments successfully
+  /api/shift-assignments:
+    post:
+      summary: Create new shift assignment
+      tags:
+        - ShiftAssignment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateShiftAssignmentDto'
+      responses:
+        '200':
+          description: Created successfully
+  /api/shift-assignments/bulk:
+    post:
+      summary: Create multiple shift assignments
+      tags:
+        - ShiftAssignment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateShiftAssignmentDto'
+      responses:
+        '200':
+          description: Created successfully
+  /api/shift-assignments/user/{userId}:
+    get:
+      summary: Get shift assignment detail
+      tags:
+        - ShiftAssignment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Get shift assignment successfully
+  /api/shift-assignments/franchise/{franchiseId}:
+    get:
+      summary: Get shift assignment detail
+      tags:
+        - ShiftAssignment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: franchiseId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Get shift assignment successfully
+  /api/shift-assignments/{id}:
+    get:
+      summary: Get shift assignment detail
+      tags:
+        - ShiftAssignment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Get shift assignment successfully
+    delete:
+      summary: Soft delete shift assignment
+      tags:
+        - ShiftAssignment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted successfully
+  /api/shift-assignments/{id}/restore:
+    patch:
+      summary: Restore shift assignment
+      tags:
+        - ShiftAssignment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Restored successfully
+  /api/shift-assignments/{id}/change-status:
+    patch:
+      summary: Change shift assignment status
+      tags:
+        - ShiftAssignment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateShiftAssignmentDto'
+      responses:
+        '200':
+          description: Changed successfully
+  /api/shifts/search:
+    post:
+      summary: Search shifts with pagination
+      tags:
+        - Shift
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                searchCondition:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    franchise_id:
+                      type: string
+                pageInfo:
+                  type: object
+                  required:
+                    - pageNum
+                    - pageSize
+                  properties:
+                    pageNum:
+                      type: integer
+                      default: 1
+                    pageSize:
+                      type: integer
+                      default: 10
+      responses:
+        '200':
+          description: Get shifts successfully
+  /api/shifts:
+    post:
+      summary: Create new shift
+      tags:
+        - Shift
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - franchise_id
+                - start_time
+                - end_time
+              properties:
+                name:
+                  type: string
+                franchise_id:
+                  type: string
+                start_time:
+                  type: string
+                end_time:
+                  type: string
+      responses:
+        '200':
+          description: Created successfully
+  /api/shifts/select:
+    get:
+      summary: Get active shifts
+      tags:
+        - Shift
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: franchise_id
+          required: true
+          schema:
+            type: string
+          description: Franchise ID to filter shifts by
+      responses:
+        '200':
+          description: List of shifts for select
+  /api/shifts/{id}:
+    get:
+      summary: Get shift detail
+      tags:
+        - Shift
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Get shift successfully
+    put:
+      summary: Update shift
+      tags:
+        - Shift
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                start_time:
+                  type: string
+                end_time:
+                  type: string
+      responses:
+        '200':
+          description: Updated successfully
+    delete:
+      summary: Soft delete shift
+      tags:
+        - Shift
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted successfully
+  /api/shifts/{id}/restore:
+    patch:
+      summary: Restore shift
+      tags:
+        - Shift
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Restored successfully
+  /api/shifts/{id}/status:
+    patch:
+      summary: Change shift status
+      tags:
+        - Shift
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_active
+              properties:
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: Status changed successfully

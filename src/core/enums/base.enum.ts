@@ -71,6 +71,8 @@ export enum BaseFieldName {
   PRODUCT_FRANCHISE_ID = "product_franchise_id",
   PRODUCT_CATEGORY_FRANCHISE_ID = "product_category_franchise_id",
   INVENTORY_ID = "inventory_id",
+  SHIFT_ID = "shift_id",
+  SHIFT_ASSIGNMENT_ID = "shift_assignment_id",
   CUSTOMER_ID = "customer_id",
   CUSTOMER_FRANCHISE_ID = "customer_franchise_id",
   STAFF_ID = "staff_id",
@@ -94,11 +96,14 @@ export enum BaseFieldName {
   REASON = "reason",
   CREATED_BY = "created_by",
 
+
   // Add more fields as needed
   IS_VERIFIED = "is_verified",
   VERIFICATION_TOKEN = "verification_token",
   VERIFICATION_TOKEN_EXPIRES = "verification_token_expires",
   TOKEN_VERSION = "token_version",
+  WORK_DATE = "work_date",
+  ASSIGNED_BY = "assigned_by",
 
   LAST_RESET_PASSWORD_AT = "last_reset_password_at",
 
@@ -128,4 +133,10 @@ export enum BaseFieldName {
   OPTIONS = "options",
   PRICE_SNAPSHOT = "price_snapshot",
   FINAL_PRICE = "final_price",
+}
+
+export enum ShiftAssignmentStatus {
+    ASSIGNED = "ASSIGNED",
+    COMPLETED = "COMPLETED",
+    ABSENT = "ABSENT",
 }

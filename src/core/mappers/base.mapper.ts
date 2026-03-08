@@ -19,6 +19,15 @@ export const mapBaseResponse = (entity: MongoBaseEntity) => {
   };
 };
 
+export const mapBaseResponseNoActive = (entity: MongoBaseEntity) => {
+  return {
+    id: entity._id.toString(),
+    is_deleted: entity.is_deleted ?? false,
+    created_at: entity.created_at?.toISOString() ?? "",
+    updated_at: entity.updated_at?.toISOString() ?? "",
+  };
+};
+
 export const mapItemToSelect = <T extends { _id: any; code: string; name: string }>(item: T): BaseItemSelectDto => {
   return {
     value: String(item._id),

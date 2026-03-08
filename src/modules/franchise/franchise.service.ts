@@ -13,6 +13,7 @@ import UpdateFranchiseDto from "./dto/update.dto";
 import { FranchiseFieldName } from "./franchise.enum";
 import { IFranchise, IFranchiseQuery, IFranchiseQueryResult } from "./franchise.interface";
 import { FranchiseRepository } from "./franchise.repository";
+import UpdateShiftDto from "../shift/dto/update.dto";
 
 type FranchiseTimeContext = {
   opened_at: string;
@@ -218,6 +219,9 @@ export default class FranchiseService
     return this.repo.findById(id);
   }
 
+  public async updateShiftsByFranchiseId(id: string, data: UpdateShiftDto[], loggedUserId: string): Promise<void> {
+    await this.franchiseRepo.updateShiftsByFranchiseId(id, data, loggedUserId);
+  }
   public async getPublicFranchises(): Promise<IFranchiseQueryResult[]> {
     const items = await this.repo.find({
       is_deleted: false,

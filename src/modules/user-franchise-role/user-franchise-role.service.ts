@@ -266,4 +266,12 @@ export default class UserFranchiseRoleService
       })
       .filter(Boolean) as IUserContext[];
   }
+
+  public async checkExistByFranchiseAndUser(franchiseId: string, userId: string): Promise<boolean> {
+    return this.userFranchiseRoleRepo.existsByFilter({
+      user_id: new Types.ObjectId(userId),
+      franchise_id: new Types.ObjectId(franchiseId),
+      is_deleted: false,
+    });
+  }
 }
