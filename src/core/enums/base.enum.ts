@@ -139,4 +139,5 @@ export enum ShiftAssignmentStatus {
     ASSIGNED = "ASSIGNED",
     COMPLETED = "COMPLETED",
     ABSENT = "ABSENT",
+    CANCELED = "CANCELED",
 }

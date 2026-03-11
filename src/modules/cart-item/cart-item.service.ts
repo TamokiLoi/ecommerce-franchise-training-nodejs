@@ -19,6 +19,10 @@ export class CartItemService implements ICartItemQuery {
     return this.cartItemRepo.findById(id);
   }
 
+  public async getItemsByCartId(cartId: Types.ObjectId): Promise<ICartItem[]> {
+    return this.cartItemRepo.getItemsByCartId(cartId);
+  }
+
   public async findByIdForUpdate(id: string): Promise<ICartItem | null> {
     return this.cartItemRepo.findByIdForUpdate(id);
   }

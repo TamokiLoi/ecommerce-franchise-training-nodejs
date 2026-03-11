@@ -1,17 +1,18 @@
 import { Router } from "express";
 import {
-  API_PATH,
   adminAuthMiddleware,
+  API_PATH,
   IRoute,
-  SYSTEM_AND_FRANCHISE_ALL_ROLES,
-  validationMiddleware,
-  SYSTEM_AND_FRANCHISE_MANAGER_ROLES,
   requireMoreContext,
+  SYSTEM_AND_FRANCHISE_ALL_ROLES,
+  SYSTEM_AND_FRANCHISE_MANAGER_ROLES,
+  validationMiddleware,
 } from "../../core";
-import { ShiftAssignmentController } from "./shift-assignment.controller";
-import { CreateShiftAssignmentDto, CreateShiftAssignmentItemsDto } from "./dto/create.dto";
-import { SearchPaginationItemDto } from "./dto/search.dto";
 import validationBulkMiddleware from "../../core/middleware/validationbulk.middleware";
+import { CreateShiftAssignmentDto } from "./dto/create.dto";
+import { SearchPaginationItemDto } from "./dto/search.dto";
+import { ShiftAssignmentController } from "./shift-assignment.controller";
+import { UpdateStatusDto } from "./dto/update.dto";
 
 export default class ShiftAssignmentRoute implements IRoute {
   public path = API_PATH.SHIFT_ASSIGNMENT;
@@ -29,78 +30,25 @@ export default class ShiftAssignmentRoute implements IRoute {
      *     description: Shift assignment related endpoints
      */
 
-    /**
-     * @swagger
-     * /api/shift-assignments/search:
-     *   post:
-     *     summary: Search shift assignments with pagination
-     *     tags: [ShiftAssignment]
-     *     security:
-     *       - bearerAuth: []
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             $ref: '#/components/schemas/SearchPaginationItemDto'
-     *     responses:
-     *       200:
-     *         description: Get shift assignments successfully
-     */
-    this.router.post(
-      API_PATH.SHIFT_ASSIGNMENT_SEARCH,
+    // PATCH domain:/api/shift-assignments/:id/status - Change item status
+    this.router.patch(
+      API_PATH.SHIFT_ASSIGNMENT_CHANGE_STATUS,
       adminAuthMiddleware(),
       requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
-      validationMiddleware(SearchPaginationItemDto),
-      this.controller.getItems,
+      validationMiddleware(UpdateStatusDto),
+      this.controller.changeStatus,
     );
 
-    /**
-     * @swagger
-     * /api/shift-assignments:
-     *   post:
-     *     summary: Create new shift assignment
-     *     tags: [ShiftAssignment]
-     *     security:
-     *       - bearerAuth: []
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             $ref: '#/components/schemas/CreateShiftAssignmentDto'
-     *     responses:
-     *       200:
-     *         description: Created successfully
-     */
+    // POST domain:/api/shift-assignments - Create item
     this.router.post(
-      API_PATH.SHIFT_ASSIGNMENT,
+      this.path,
       adminAuthMiddleware(),
       requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
       validationMiddleware(CreateShiftAssignmentDto),
       this.controller.createItem,
     );
 
-    /**
-     * @swagger
-     * /api/shift-assignments/bulk:
-     *   post:
-     *     summary: Create multiple shift assignments
-     *     tags: [ShiftAssignment]
-     *     security:
-     *       - bearerAuth: []
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: array
-     *             items:
-     *               $ref: '#/components/schemas/CreateShiftAssignmentDto'
-     *     responses:
-     *       200:
-     *         description: Created successfully
-     */
+    // POST domain:/api/shift-assignments/bulk - Create items
     this.router.post(
       API_PATH.SHIFT_ASSIGNMENT_BULK,
       adminAuthMiddleware(),
@@ -109,24 +57,16 @@ export default class ShiftAssignmentRoute implements IRoute {
       this.controller.createItems,
     );
 
-    /**
-     * @swagger
-     * /api/shift-assignments/user/{userId}:
-     *   get:
-     *     summary: Get shift assignment detail
-     *     tags: [ShiftAssignment]
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: userId
-     *         required: true
-     *         schema:
-     *           type: string
-     *     responses:
-     *       200:
-     *         description: Get shift assignment successfully
-     */
+    // GET domain:/api/shift-assignments/search - Search items by conditions
+    this.router.post(
+      API_PATH.SHIFT_ASSIGNMENT_SEARCH,
+      adminAuthMiddleware(),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
+      validationMiddleware(SearchPaginationItemDto),
+      this.controller.getItems,
+    );
+
+    // GET domain:/api/shift-assignments/user/:userId - Get shift assignment detail by userId and date
     this.router.get(
       API_PATH.SHIFT_ASSIGNMENT_USER_ID,
       adminAuthMiddleware(),
@@ -134,75 +74,31 @@ export default class ShiftAssignmentRoute implements IRoute {
       this.controller.getShiftAssignmentByUserId,
     );
 
-    /**
-     * @swagger
-     * /api/shift-assignments/franchise/{franchiseId}:
-     *   get:
-     *     summary: Get shift assignment detail
-     *     tags: [ShiftAssignment]
-     *     security: 
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: franchiseId
-     *         required: true
-     *         schema:
-     *           type: string
-     *     responses:
-     *       200:
-     *         description: Get shift assignment successfully
-     */
+    // GET domain:/api/shift-assignments/franchise/:franchiseId - Get shift assignment detail by franchiseId
     this.router.get(
       API_PATH.SHIFT_ASSIGNMENT_FRANCHISE_ID,
       adminAuthMiddleware(),
       requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
-      this.controller.getShiftAssignmentByFranchiseId,
-    )
+      this.controller.getAllByFranchiseIdAndDate,
+    );
 
-    /**
-     * @swagger
-     * /api/shift-assignments/{id}:
-     *   get:
-     *     summary: Get shift assignment detail
-     *     tags: [ShiftAssignment]
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: string
-     *     responses:
-     *       200:
-     *         description: Get shift assignment successfully
-     */
+    // GET domain:/api/shift-assignments/shift/:shiftId - Get shift assignment detail by shiftId
+    this.router.get(
+      API_PATH.SHIFT_ASSIGNMENT_BY_SHIFT_ID,
+      adminAuthMiddleware(),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
+      this.controller.getAllByShiftIdAndDate,
+    );
+
+    // GET domain:/api/shift-assignments/:id - Get item
     this.router.get(
       API_PATH.SHIFT_ASSIGNMENT_ID,
       adminAuthMiddleware(),
       requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
-      this.controller.getById,
+      this.controller.getItem,
     );
 
-
-    /**
-     * @swagger
-     * /api/shift-assignments/{id}:
-     *   delete:
-     *     summary: Soft delete shift assignment
-     *     tags: [ShiftAssignment]
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: string
-     *     responses:
-     *       200:
-     *         description: Deleted successfully
-     */
+    // DELETE domain:/api/shift-assignments/:id - Delete item
     this.router.delete(
       API_PATH.SHIFT_ASSIGNMENT_ID,
       adminAuthMiddleware(),
@@ -210,67 +106,12 @@ export default class ShiftAssignmentRoute implements IRoute {
       this.controller.softDeleteItem,
     );
 
-    /**
-     * @swagger
-     * /api/shift-assignments/{id}/restore:
-     *   patch:
-     *     summary: Restore shift assignment
-     *     tags: [ShiftAssignment]
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: string
-     *     responses:
-     *       200:
-     *         description: Restored successfully
-     */
+    // PATCH domain:/api/shift-assignments/:id/restore - Restore item
     this.router.patch(
       API_PATH.SHIFT_ASSIGNMENT_RESTORE,
       adminAuthMiddleware(),
       requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
       this.controller.restoreItem,
     );
-
-    /**
-     * @swagger
-     * /api/shift-assignments/{id}/change-status:
-     *   patch:
-     *     summary: Change shift assignment status
-     *     tags: [ShiftAssignment]
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: string
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             $ref: '#/components/schemas/UpdateShiftAssignmentDto'
-     *     responses:
-     *       200:
-     *         description: Changed successfully
-     */
-    this.router.patch(
-      API_PATH.SHIFT_ASSIGNMENT_CHANGE_STATUS,
-      adminAuthMiddleware(),
-      requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
-      this.controller.changeStatus,
-    );
-
-    this.router.get(
-      API_PATH.SHIFT_ASSIGNMENT_BY_SHIFT_ID,
-      adminAuthMiddleware(),
-      requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
-      this.controller.getShiftAssignedByShiftId,
-    )
   }
 }

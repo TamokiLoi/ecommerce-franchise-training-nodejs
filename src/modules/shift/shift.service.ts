@@ -15,13 +15,7 @@ import CreateShiftDto from "./dto/create.dto";
 import UpdateShiftDto from "./dto/update.dto";
 import { SearchPaginationItemDto } from "./dto/search.dto";
 import { ShiftRepository } from "./shift.repository";
-import {
-  AuditEntityType,
-  AuditAction,
-  IAuditLogger,
-  buildAuditDiff,
-  pickAuditSnapshot,
-} from "../audit-log";
+import { AuditEntityType, AuditAction, IAuditLogger, buildAuditDiff, pickAuditSnapshot } from "../audit-log";
 import { ShiftFieldName } from "./shift.enum";
 import { IShiftAssignmentQuery } from "../shift-assignment";
 import { ShiftItemDto } from "./dto/item.dto";
@@ -34,25 +28,20 @@ export const AUDIT_FIELDS_ITEM = [
 ] as readonly (keyof IShift)[];
 
 export class ShiftService
-  extends BaseCrudService<
-    IShift,
-    CreateShiftDto,
-    UpdateShiftDto,
-    SearchPaginationItemDto
-  >
+  extends BaseCrudService<IShift, CreateShiftDto, UpdateShiftDto, SearchPaginationItemDto>
   implements IShiftQuery
 {
   private readonly shiftRepo: ShiftRepository;
   constructor(
     repo: ShiftRepository,
-    private  shiftAssign: IShiftAssignmentQuery,
+    private shiftAssign: IShiftAssignmentQuery,
     private readonly auditLogger: IAuditLogger,
   ) {
     super(repo);
     this.shiftRepo = repo;
-
   }
 
+  // ===== Start CRUD =====
 
   protected async beforeCreate(dto: CreateShiftDto): Promise<void> {
     await checkEmptyObject(dto);
@@ -70,9 +59,7 @@ export class ShiftService
     if (isExist) {
       errors.push({
         field: BaseFieldName.NAME,
-        message: MSG_BUSINESS.ITEM_EXISTS(
-          `Shift with Name: '${dto.name}' in this franchise`,
-        ),
+        message: MSG_BUSINESS.ITEM_EXISTS(`Shift with Name: '${dto.name}' in this franchise`),
       });
     }
 
@@ -85,9 +72,7 @@ export class ShiftService
     if (isTimeExist) {
       errors.push({
         field: ShiftFieldName.START_TIME,
-        message: MSG_BUSINESS.ITEM_EXISTS(
-          `Shift with Time: '${dto.start_time} - ${dto.end_time}' in this franchise`,
-        ),
+        message: MSG_BUSINESS.ITEM_EXISTS(`Shift with Time: '${dto.start_time} - ${dto.end_time}' in this franchise`),
       });
     }
 
@@ -96,10 +81,7 @@ export class ShiftService
     }
   }
 
-  protected async afterCreate(
-    item: IShift,
-    loggedUserId: string,
-  ): Promise<void> {
+  protected async afterCreate(item: IShift, loggedUserId: string): Promise<void> {
     const snapshot = pickAuditSnapshot(item, AUDIT_FIELDS_ITEM);
     await this.auditLogger.log({
       entityType: AuditEntityType.SHIFT,
@@ -110,11 +92,7 @@ export class ShiftService
     });
   }
 
-  protected async beforeUpdate(
-    current: IShift,
-    payload: UpdateShiftDto,
-    _loggedUserId: string,
-  ): Promise<void> {
+  protected async beforeUpdate(current: IShift, payload: UpdateShiftDto, _loggedUserId: string): Promise<void> {
     await checkEmptyObject(payload);
 
     const errors: IError[] = [];
@@ -125,17 +103,13 @@ export class ShiftService
       // We need to check name uniqueness within the same franchise
       const isExist = await this.repo.existsByFilter({
         [BaseFieldName.NAME]: normalizedName,
-        [BaseFieldName.FRANCHISE_ID]: new Types.ObjectId(
-          current.franchise_id.toString(),
-        ),
+        [BaseFieldName.FRANCHISE_ID]: new Types.ObjectId(current.franchise_id.toString()),
         _id: { $ne: current._id },
       });
       if (isExist) {
         errors.push({
           field: BaseFieldName.NAME,
-          message: MSG_BUSINESS.ITEM_EXISTS(
-            `Shift with Name: '${payload.name}' in this franchise`,
-          ),
+          message: MSG_BUSINESS.ITEM_EXISTS(`Shift with Name: '${payload.name}' in this franchise`),
         });
       }
     }
@@ -145,9 +119,7 @@ export class ShiftService
     const nextEnd = payload.end_time ?? current.end_time;
     if (nextStart !== current.start_time || nextEnd !== current.end_time) {
       const isTimeExist = await this.repo.existsByFilter({
-        [BaseFieldName.FRANCHISE_ID]: new Types.ObjectId(
-          current.franchise_id.toString(),
-        ),
+        [BaseFieldName.FRANCHISE_ID]: new Types.ObjectId(current.franchise_id.toString()),
         [ShiftFieldName.START_TIME]: nextStart,
         [ShiftFieldName.END_TIME]: nextEnd,
         _id: { $ne: current._id },
@@ -155,9 +127,7 @@ export class ShiftService
       if (isTimeExist) {
         errors.push({
           field: ShiftFieldName.START_TIME,
-          message: MSG_BUSINESS.ITEM_EXISTS(
-            `Shift with Time: '${nextStart} - ${nextEnd}' in this franchise`,
-          ),
+          message: MSG_BUSINESS.ITEM_EXISTS(`Shift with Time: '${nextStart} - ${nextEnd}' in this franchise`),
         });
       }
     }
@@ -166,38 +136,23 @@ export class ShiftService
       throw new HttpException(HttpStatus.BadRequest, "", errors);
     }
 
-    const hasChange = (Object.keys(payload) as (keyof UpdateShiftDto)[]).some(
-      (key) => payload[key] !== current[key],
-    );
+    const hasChange = (Object.keys(payload) as (keyof UpdateShiftDto)[]).some((key) => payload[key] !== current[key]);
 
     if (!hasChange) {
-      throw new HttpException(
-        HttpStatus.BadRequest,
-        MSG_BUSINESS.NO_DATA_TO_UPDATE,
-      );
+      throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.NO_DATA_TO_UPDATE);
     }
   }
+  
   protected async beforeDelete(item: IShift, loggedUserId: string): Promise<void> {
     // check if shift has been assigned to any user
-    const isExist = await this.shiftAssign.getShiftAssignementByShiftId(item._id.toString());
+    const isExist = await this.shiftAssign.getItemByShiftId(item._id.toString());
     if (isExist) {
-      throw new HttpException(
-        HttpStatus.BAD_REQUEST,
-        MSG_BUSINESS.SHIFT_IS_ASSIGNED_TO_SOME_USERS,
-      );
+      throw new HttpException(HttpStatus.BAD_REQUEST, MSG_BUSINESS.SHIFT_IS_ASSIGNED_TO_SOME_USERS);
     }
   }
 
-  protected async afterUpdate(
-    oldItem: IShift,
-    newItem: IShift,
-    loggedUserId: string,
-  ): Promise<void> {
-    const { oldData, newData } = buildAuditDiff(
-      oldItem,
-      newItem,
-      AUDIT_FIELDS_ITEM,
-    );
+  protected async afterUpdate(oldItem: IShift, newItem: IShift, loggedUserId: string): Promise<void> {
+    const { oldData, newData } = buildAuditDiff(oldItem, newItem, AUDIT_FIELDS_ITEM);
 
     if (newData && Object.keys(newData).length > 0) {
       await this.auditLogger.log({
@@ -211,10 +166,7 @@ export class ShiftService
     }
   }
 
-  protected async afterDelete(
-    item: IShift,
-    loggedUserId: string,
-  ): Promise<void> {
+  protected async afterDelete(item: IShift, loggedUserId: string): Promise<void> {
     await this.auditLogger.log({
       entityType: AuditEntityType.SHIFT,
       entityId: String(item._id),
@@ -225,10 +177,7 @@ export class ShiftService
     });
   }
 
-  protected async afterRestore(
-    item: IShift,
-    loggedUserId: string,
-  ): Promise<void> {
+  protected async afterRestore(item: IShift, loggedUserId: string): Promise<void> {
     await this.auditLogger.log({
       entityType: AuditEntityType.SHIFT,
       entityId: String(item._id),
@@ -239,18 +188,14 @@ export class ShiftService
     });
   }
 
-  protected async doSearch(
-    dto: SearchPaginationItemDto,
-  ): Promise<{ data: IShift[]; total: number }> {
+  protected async doSearch(dto: SearchPaginationItemDto): Promise<{ data: IShift[]; total: number }> {
     return this.shiftRepo.getItems(dto);
   }
 
+  // ===== End CRUD =====
+
   // addition
-  public async changeStatus(
-    id: string,
-    model: UpdateStatusDto,
-    loggedUserId: string,
-  ): Promise<void> {
+  public async changeStatus(id: string, model: UpdateStatusDto, loggedUserId: string): Promise<void> {
     const { is_active } = model;
 
     // 1. Get item
@@ -259,20 +204,14 @@ export class ShiftService
       throw new HttpException(HttpStatus.NotFound, MSG_BUSINESS.ITEM_NOT_FOUND);
     }
 
-    const isExist = await this.shiftAssign.getShiftAssignementByShiftId(id);
+    const isExist = await this.shiftAssign.getItemByShiftId(id);
     if (isExist) {
-      throw new HttpException(
-        HttpStatus.BAD_REQUEST,
-        MSG_BUSINESS.SHIFT_IS_ASSIGNED_TO_SOME_USERS,
-      );
+      throw new HttpException(HttpStatus.BAD_REQUEST, MSG_BUSINESS.SHIFT_IS_ASSIGNED_TO_SOME_USERS);
     }
 
     // 2. Check change status
     if (currentItem.is_active === is_active) {
-      throw new HttpException(
-        HttpStatus.BadRequest,
-        MSG_BUSINESS.STATUS_NO_CHANGE,
-      );
+      throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.STATUS_NO_CHANGE);
     }
 
     // 3. Update status
@@ -303,10 +242,10 @@ export class ShiftService
     return this.shiftRepo.findAll();
   }
 
-  public async getFranchiseIdbyShiftId(id: string): Promise<string | null> {
-    return this.shiftRepo.getFranchiseIdbyShiftId(id);
+  public async getFranchiseIdByShiftId(id: string): Promise<string | null> {
+    return this.shiftRepo.getFranchiseIdByShiftId(id);
   }
   public setShiftAssignmentQuery(query: IShiftAssignmentQuery) {
-  this.shiftAssign = query;
-}
+    this.shiftAssign = query;
+  }
 }

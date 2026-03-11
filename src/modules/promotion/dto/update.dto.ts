@@ -1,14 +1,12 @@
 import { Type } from "class-transformer";
-import {
-  IsDateString,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  Min,
-} from "class-validator";
+import { IsDate, IsEnum, IsNumber, IsOptional, IsString, Min } from "class-validator";
 import { PromotionType } from "../promotion.enum";
 
 export class UpdatePromotionDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
   @IsOptional()
   @IsEnum(PromotionType)
   type?: PromotionType;
@@ -20,10 +18,12 @@ export class UpdatePromotionDto {
   value?: number;
 
   @IsOptional()
-  @IsDateString()
+  @IsDate()
+  @Type(() => Date)
   start_date?: Date;
 
   @IsOptional()
-  @IsDateString()
+  @IsDate()
+  @Type(() => Date)
   end_date?: Date;
 }

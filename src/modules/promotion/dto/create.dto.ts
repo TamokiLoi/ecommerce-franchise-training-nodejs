@@ -1,16 +1,12 @@
 import { Type } from "class-transformer";
-import {
-  IsDate,
-  IsEnum,
-  IsMongoId,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  Min,
-} from "class-validator";
+import { IsDate, IsEnum, IsMongoId, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from "class-validator";
 import { PromotionType } from "../promotion.enum";
 
 export class CreatePromotionDto {
+  @IsNotEmpty()
+  @IsString()
+  name!: string;
+
   @IsNotEmpty()
   @IsMongoId()
   franchise_id!: string;

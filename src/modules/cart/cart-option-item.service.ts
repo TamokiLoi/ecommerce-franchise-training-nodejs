@@ -1,6 +1,6 @@
 import { CustomerAuthPayload, HttpException, HttpStatus, UserAuthPayload } from "../../core";
 import { AuditAction, AuditEntityType, IAuditLogger } from "../audit-log";
-import { ICartItemQuery } from "../cart-item";
+import { ICartItem, ICartItemQuery } from "../cart-item";
 import { CartHelper } from "./cart.helper";
 import { AddCartItemOptionDto } from "./dto/create.dto";
 import { RemoveOptionItemDto, UpdateQuantityOptionItemDto } from "./dto/optionItem.dto";
@@ -15,7 +15,7 @@ export class CartOptionItemService {
   public async updateOptionItem(
     payload: UpdateQuantityOptionItemDto,
     loggedUser: UserAuthPayload | CustomerAuthPayload,
-  ): Promise<void> {
+  ): Promise<ICartItem> {
     const { cart_item_id, option_product_franchise_id, quantity } = payload;
 
     /**
@@ -125,12 +125,14 @@ export class CartOptionItemService {
       newData: newSnapshot,
       changedBy: loggedUser.id,
     });
+
+    return finalItem;
   }
 
   public async removeOptionItem(
     payload: RemoveOptionItemDto,
     loggedUser: UserAuthPayload | CustomerAuthPayload,
-  ): Promise<void> {
+  ): Promise<ICartItem> {
     const { cart_item_id, option_product_franchise_id } = payload;
 
     const item = await this.cartItemQuery.findByIdForUpdate(cart_item_id);
@@ -182,5 +184,7 @@ export class CartOptionItemService {
       newData: newSnapshot,
       changedBy: loggedUser.id,
     });
+
+    return item;
   }
 }

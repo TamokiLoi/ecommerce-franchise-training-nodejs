@@ -9,6 +9,13 @@ export class CartRepository extends BaseRepository<ICart> {
     super(CartSchema);
   }
 
+  public async findByIdForUpdate(id: string, is_deleted = false) {
+    return this.model.findOne({
+      _id: new Types.ObjectId(id),
+      is_deleted,
+    });
+  }
+
   public async getItems(model: SearchPaginationItemDto): Promise<{ data: ICart[]; total: number }> {
     const searchCondition = {
       ...new SearchItemDto(),
@@ -17,15 +24,13 @@ export class CartRepository extends BaseRepository<ICart> {
 
     const { franchise_id, customer_id, staff_id, status, start_date, end_date, is_deleted } = searchCondition;
 
-    const { pageNum, pageSize } = model.pageInfo;
+    const { pageNum = 1, pageSize = 10 } = model.pageInfo;
     const skip = (pageNum - 1) * pageSize;
 
     let matchQuery: Record<string, any> = {};
 
-    // common filters
     matchQuery = formatItemsQuery(matchQuery, { is_deleted });
 
-    // ===== Basic filters =====
     if (franchise_id) {
       matchQuery.franchise_id = new Types.ObjectId(franchise_id);
     }
@@ -57,78 +62,10 @@ export class CartRepository extends BaseRepository<ICart> {
     }
 
     try {
+      const pipeline = this.buildCartBaseAggregate(matchQuery);
+
       const result = await this.model.aggregate([
-        { $match: matchQuery },
-
-        // ===== Franchise lookup =====
-        {
-          $lookup: {
-            from: "franchises",
-            localField: "franchise_id",
-            foreignField: "_id",
-            as: "franchise",
-          },
-        },
-        { $unwind: { path: "$franchise", preserveNullAndEmptyArrays: true } },
-
-        // ===== Customer lookup =====
-        {
-          $lookup: {
-            from: "customers",
-            localField: "customer_id",
-            foreignField: "_id",
-            as: "customer",
-          },
-        },
-        { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
-
-        // ===== Staff lookup =====
-        {
-          $lookup: {
-            from: "users",
-            localField: "staff_id",
-            foreignField: "_id",
-            as: "staff",
-          },
-        },
-        { $unwind: { path: "$staff", preserveNullAndEmptyArrays: true } },
-
-        // ===== Voucher lookup =====
-        {
-          $lookup: {
-            from: "vouchers",
-            localField: "voucher_id",
-            foreignField: "_id",
-            as: "voucher",
-          },
-        },
-        { $unwind: { path: "$voucher", preserveNullAndEmptyArrays: true } },
-
-        // ===== Add computed fields =====
-        {
-          $addFields: {
-            franchise_name: "$franchise.name",
-
-            customer_name: "$customer.name",
-            customer_email: "$customer.email",
-            customer_phone: "$customer.phone",
-
-            staff_name: "$staff.name",
-
-            voucher_code: "$voucher.code",
-          },
-        },
-
-        // ===== Remove raw lookup objects =====
-        {
-          $project: {
-            franchise: 0,
-            customer: 0,
-            staff: 0,
-            voucher: 0,
-          },
-        },
-
+        ...pipeline,
         {
           $facet: {
             data: [{ $sort: { created_at: -1 } }, { $skip: skip }, { $limit: pageSize }],
@@ -138,8 +75,8 @@ export class CartRepository extends BaseRepository<ICart> {
       ]);
 
       return {
-        data: result[0].data,
-        total: result[0].total[0]?.count || 0,
+        data: result[0]?.data ?? [],
+        total: result[0]?.total?.[0]?.count ?? 0,
       };
     } catch (error) {
       throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.DATABASE_QUERY_FAILED);
@@ -147,29 +84,13 @@ export class CartRepository extends BaseRepository<ICart> {
   }
 
   /**
-   * Get active cart by customer + franchise
-   */
-  public async getCartStatusActive(customerId: string, franchiseId: string): Promise<ICart | null> {
-    return this.model
-      .findOne({
-        customer_id: new Types.ObjectId(customerId),
-        franchise_id: new Types.ObjectId(franchiseId),
-        status: CartStatus.ACTIVE,
-        is_deleted: false,
-      })
-      .lean();
-  }
-
-  /**
    * Get full cart detail with items + options
    */
   public async getCartDetail(cartId: Types.ObjectId) {
     const result = await this.model.aggregate([
-      {
-        $match: { _id: cartId },
-      },
+      ...this.buildCartBaseAggregate({ _id: cartId }),
 
-      // CART ITEMS
+      // Cart Items
       {
         $lookup: {
           from: "cartitems",
@@ -179,40 +100,7 @@ export class CartRepository extends BaseRepository<ICart> {
         },
       },
 
-      // CUSTOMER
-      {
-        $lookup: {
-          from: "customers",
-          localField: "customer_id",
-          foreignField: "_id",
-          as: "customer",
-        },
-      },
-      { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
-
-      // STAFF
-      {
-        $lookup: {
-          from: "users",
-          localField: "staff_id",
-          foreignField: "_id",
-          as: "staff",
-        },
-      },
-      { $unwind: { path: "$staff", preserveNullAndEmptyArrays: true } },
-
-      // FRANCHISE
-      {
-        $lookup: {
-          from: "franchises",
-          localField: "franchise_id",
-          foreignField: "_id",
-          as: "franchise",
-        },
-      },
-      { $unwind: { path: "$franchise", preserveNullAndEmptyArrays: true } },
-
-      // PRODUCT FRANCHISE OF CART ITEMS
+      // Product franchises
       {
         $lookup: {
           from: "productfranchises",
@@ -222,7 +110,7 @@ export class CartRepository extends BaseRepository<ICart> {
         },
       },
 
-      // OPTION PRODUCT FRANCHISE
+      // Option product franchises
       {
         $lookup: {
           from: "productfranchises",
@@ -232,7 +120,7 @@ export class CartRepository extends BaseRepository<ICart> {
         },
       },
 
-      // PRODUCTS OF MAIN PRODUCT
+      // Products
       {
         $lookup: {
           from: "products",
@@ -242,7 +130,7 @@ export class CartRepository extends BaseRepository<ICart> {
         },
       },
 
-      // PRODUCTS OF OPTIONS
+      // Option products
       {
         $lookup: {
           from: "products",
@@ -252,7 +140,6 @@ export class CartRepository extends BaseRepository<ICart> {
         },
       },
 
-      // BUILD CART ITEMS
       {
         $addFields: {
           cart_items: {
@@ -268,21 +155,6 @@ export class CartRepository extends BaseRepository<ICart> {
                 final_line_total: "$$item.final_line_total",
                 options_hash: "$$item.options_hash",
 
-                // PRODUCT FRANCHISE
-                product_franchise_id: {
-                  $arrayElemAt: [
-                    {
-                      $filter: {
-                        input: "$product_franchises",
-                        as: "pf",
-                        cond: { $eq: ["$$pf._id", "$$item.product_franchise_id"] },
-                      },
-                    },
-                    0,
-                  ],
-                },
-
-                // PRODUCT NAME
                 product_name: {
                   $arrayElemAt: [
                     {
@@ -326,7 +198,6 @@ export class CartRepository extends BaseRepository<ICart> {
                   ],
                 },
 
-                // OPTIONS
                 options: {
                   $map: {
                     input: "$$item.options",
@@ -394,13 +265,13 @@ export class CartRepository extends BaseRepository<ICart> {
           _id: 1,
 
           customer_id: 1,
-          customer_name: "$customer.name",
+          customer_name: 1,
 
           staff_id: 1,
-          staff_name: "$staff.name",
+          staff_name: 1,
 
           franchise_id: 1,
-          franchise_name: "$franchise.name",
+          franchise_name: 1,
 
           status: 1,
           address: 1,
@@ -418,6 +289,90 @@ export class CartRepository extends BaseRepository<ICart> {
     ]);
 
     return result[0] || null;
+  }
+
+  private buildCartBaseAggregate(matchQuery: Record<string, any>) {
+    return [
+      { $match: matchQuery },
+
+      // Franchise
+      {
+        $lookup: {
+          from: "franchises",
+          localField: "franchise_id",
+          foreignField: "_id",
+          as: "franchise",
+        },
+      },
+      { $unwind: { path: "$franchise", preserveNullAndEmptyArrays: true } },
+
+      // Customer
+      {
+        $lookup: {
+          from: "customers",
+          localField: "customer_id",
+          foreignField: "_id",
+          as: "customer",
+        },
+      },
+      { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
+
+      // Staff
+      {
+        $lookup: {
+          from: "users",
+          localField: "staff_id",
+          foreignField: "_id",
+          as: "staff",
+        },
+      },
+      { $unwind: { path: "$staff", preserveNullAndEmptyArrays: true } },
+
+      // Voucher
+      {
+        $lookup: {
+          from: "vouchers",
+          localField: "voucher_id",
+          foreignField: "_id",
+          as: "voucher",
+        },
+      },
+      { $unwind: { path: "$voucher", preserveNullAndEmptyArrays: true } },
+
+      {
+        $addFields: {
+          franchise_name: "$franchise.name",
+          customer_name: "$customer.name",
+          customer_email: "$customer.email",
+          customer_phone: "$customer.phone",
+          staff_name: "$staff.name",
+          voucher_code: "$voucher.code",
+        },
+      },
+
+      {
+        $project: {
+          franchise: 0,
+          customer: 0,
+          staff: 0,
+          voucher: 0,
+        },
+      },
+    ];
+  }
+
+  /**
+   * Get active cart by customer + franchise
+   */
+  public async getCartStatusActive(customerId: string, franchiseId: string): Promise<ICart | null> {
+    return this.model
+      .findOne({
+        customer_id: new Types.ObjectId(customerId),
+        franchise_id: new Types.ObjectId(franchiseId),
+        status: CartStatus.ACTIVE,
+        is_deleted: false,
+      })
+      .lean();
   }
 
   /**

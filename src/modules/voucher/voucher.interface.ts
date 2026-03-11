@@ -5,10 +5,13 @@ import { VoucherFieldName, VoucherType } from "./voucher.enum";
 
 export interface IVoucher extends Document, IBase {
   [VoucherFieldName.CODE]: string;
-  [BaseFieldName.FRANCHISE_ID]: Types.ObjectId;
-  [VoucherFieldName.PRODUCT_FRANCHISE_ID]?: Types.ObjectId;
   [VoucherFieldName.NAME]: string;
   [VoucherFieldName.DESCRIPTION]: string;
+  [BaseFieldName.FRANCHISE_ID]: Types.ObjectId;
+  franchise_name: string;
+  [VoucherFieldName.PRODUCT_FRANCHISE_ID]?: Types.ObjectId;
+  product_id: string;
+  product_name: string;
   [VoucherFieldName.TYPE]: VoucherType;
   [VoucherFieldName.VALUE]: number;
   [VoucherFieldName.QUOTA_TOTAL]: number;

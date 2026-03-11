@@ -5,6 +5,7 @@ import { PromotionFieldName, PromotionType } from "./promotion.enum";
 import { IPromotion } from "./promotion.interface";
 
 const PromotionSchemaEntity = new Schema({
+  [BaseFieldName.NAME]: { type: String, required: true, index: true },
   [BaseFieldName.FRANCHISE_ID]: {
     type: Schema.Types.ObjectId,
     ref: COLLECTION_NAME.FRANCHISE,
@@ -32,9 +33,14 @@ const PromotionSchemaEntity = new Schema({
   ...BASE_MODEL_FIELDS,
 });
 
+PromotionSchemaEntity.index({ franchise_id: 1 });
+
+PromotionSchemaEntity.index({
+  franchise_id: 1,
+  start_date: 1,
+  end_date: 1,
+});
+
 export type PromotionDocument = HydratedDocument<IPromotion>;
-const PromotionSchema = mongoose.model<PromotionDocument>(
-  COLLECTION_NAME.PROMOTION,
-  PromotionSchemaEntity,
-);
+const PromotionSchema = mongoose.model<PromotionDocument>(COLLECTION_NAME.PROMOTION, PromotionSchemaEntity);
 export default PromotionSchema;

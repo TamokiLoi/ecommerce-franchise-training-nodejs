@@ -25,6 +25,7 @@ export interface ICartItemOption {
 
 export interface ICartItemQuery {
   getById(id: string): Promise<ICartItem | null>;
+  getItemsByCartId(cartId: Types.ObjectId): Promise<ICartItem[]>;
   findByIdForUpdate(id: string): Promise<ICartItem | null>;
   getCartItem(payload: ICartItemDto): Promise<ICartItem | null>;
   createCartItem(payload: ICreateCartItemDto): Promise<ICartItem>;

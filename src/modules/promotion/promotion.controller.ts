@@ -1,3 +1,5 @@
+import { NextFunction, Request, Response } from "express";
+import { formatResponse, HttpStatus } from "../../core";
 import { BaseCrudController } from "../../core/controller";
 import { CreatePromotionDto } from "./dto/create.dto";
 import { PromotionItemDto } from "./dto/item.dto";
@@ -6,7 +8,6 @@ import { UpdatePromotionDto } from "./dto/update.dto";
 import { IPromotion } from "./promotion.interface";
 import { mapItemToResponse } from "./promotion.mapper";
 import { PromotionService } from "./promotion.service";
-import { NextFunction, Request, Response } from "express";
 
 export class PromotionController extends BaseCrudController<
   IPromotion,
@@ -20,11 +21,17 @@ export class PromotionController extends BaseCrudController<
     super(service, mapItemToResponse);
   }
 
-  public changeStatus = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ) => {
+  public getDetail = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const item: IPromotion | null = await this.service.getDetail(id);
+      res.status(HttpStatus.Success).json(formatResponse(item && mapItemToResponse(item)));
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public changeStatus = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
       const { is_active } = req.body;
@@ -42,16 +49,11 @@ export class PromotionController extends BaseCrudController<
     }
   };
 
-  public getAllPromotionsByFranchiseId = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ) => {
+  public getAllPromotionsByFranchiseId = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { franchiseId } = req.params;
 
-      const data =
-        await this.service.getAllPromotionsByFranchiseId(franchiseId);
+      const data = await this.service.getAllPromotionsByFranchiseId(franchiseId);
 
       res.json({
         success: true,
@@ -62,18 +64,11 @@ export class PromotionController extends BaseCrudController<
     }
   };
 
-  public getAllPromotionsByProductFranchiseId = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ) => {
+  public getAllPromotionsByProductFranchiseId = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { productFranchiseId } = req.params;
 
-      const data =
-        await this.service.getAllPromotionsByProductFranchiseId(
-          productFranchiseId,
-        );
+      const data = await this.service.getAllPromotionsByProductFranchiseId(productFranchiseId);
 
       res.json({
         success: true,

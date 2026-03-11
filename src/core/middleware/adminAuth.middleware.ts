@@ -1,7 +1,6 @@
 import { RequestHandler } from "express";
 import { JsonWebTokenError, TokenExpiredError } from "jsonwebtoken";
 import { BaseRole, HttpStatus, RoleScope } from "../enums";
-import { UserAuthPayload } from "../models";
 import { authFormatResponse, getTokenFromRequest, verifyUserToken } from "./auth.helper";
 
 export interface AuthContext {
@@ -83,7 +82,7 @@ export const requireMoreContext = (rules: AuthContext[]) => [requireContext, req
 
 const adminAuthMiddleware = (): RequestHandler => {
   return async (req, res, next) => {
-    const token = getTokenFromRequest(req);
+    const token = getTokenFromRequest(req, false);
 
     // ❗ Không có access token
     if (!token) {

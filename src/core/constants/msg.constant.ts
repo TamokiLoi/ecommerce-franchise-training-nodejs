@@ -1,5 +1,6 @@
 export const MSG = {
   TIME_HH_MM: "Time must be in HH:mm format (00:00 - 23:59)",
+  DATE_YYYY_MM_DD: "Date must be in YYYY/MM/DD format (Current Date -> 9999/12/31)",
 };
 
 export const MSG_BUSINESS = {

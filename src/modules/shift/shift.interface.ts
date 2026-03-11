@@ -12,5 +12,5 @@ export interface IShift extends Document, IBase {
 
 export interface IShiftQuery {
   getById(id: string): Promise<IShift | null>;
-  getFranchiseIdbyShiftId(id: string): Promise<string | null>;
+  getFranchiseIdByShiftId(id: string): Promise<string | null>;
 }

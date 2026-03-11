@@ -42,9 +42,14 @@ const VoucherSchemaEntity = new Schema({
   ...BASE_MODEL_FIELDS,
 });
 
+VoucherSchemaEntity.index({ franchise_id: 1 });
+
+VoucherSchemaEntity.index({
+  franchise_id: 1,
+  start_date: 1,
+  end_date: 1,
+});
+
 export type VoucherDocument = HydratedDocument<IVoucher>;
-const VoucherSchema = mongoose.model<VoucherDocument>(
-  COLLECTION_NAME.VOUCHER,
-  VoucherSchemaEntity,
-);
+const VoucherSchema = mongoose.model<VoucherDocument>(COLLECTION_NAME.VOUCHER, VoucherSchemaEntity);
 export default VoucherSchema;

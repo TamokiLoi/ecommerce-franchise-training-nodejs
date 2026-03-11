@@ -1,21 +1,11 @@
-import { Types } from "mongoose";
-import { MSG_BUSINESS } from "../../core/constants";
+import { MSG_BUSINESS } from "../../core";
 import { BaseFieldName, HttpStatus } from "../../core/enums";
 import { HttpException } from "../../core/exceptions";
 import { IError } from "../../core/interfaces";
 import { BaseCrudService } from "../../core/services";
-import {
-  checkEmptyObject,
-  normalizeCode,
-  normalizeText,
-} from "../../core/utils";
-import {
-  AuditAction,
-  AuditEntityType,
-  buildAuditDiff,
-  IAuditLogger,
-  pickAuditSnapshot,
-} from "../audit-log";
+import { checkEmptyObject, genVoucherCode } from "../../core/utils";
+import { AuditAction, AuditEntityType, buildAuditDiff, IAuditLogger, pickAuditSnapshot } from "../audit-log";
+import { IProductFranchiseQuery } from "../product-franchise";
 import { CreateVoucherDto } from "./dto/create.dto";
 import { SearchPaginationItemDto } from "./dto/search.dto";
 import { UpdateVoucherDto } from "./dto/update.dto";
@@ -37,12 +27,7 @@ const AUDIT_FIELDS_ITEM = [
 ] as readonly (keyof IVoucher)[];
 
 export class VoucherService
-  extends BaseCrudService<
-    IVoucher,
-    CreateVoucherDto,
-    UpdateVoucherDto,
-    SearchPaginationItemDto
-  >
+  extends BaseCrudService<IVoucher, CreateVoucherDto, UpdateVoucherDto, SearchPaginationItemDto>
   implements IVoucherQuery
 {
   private readonly voucherRepo: VoucherRepository;
@@ -50,39 +35,58 @@ export class VoucherService
   constructor(
     repo: VoucherRepository,
     private readonly auditLogger: IAuditLogger,
+    private readonly productFranchiseQuery: IProductFranchiseQuery,
   ) {
     super(repo);
     this.voucherRepo = repo;
   }
 
-  protected async beforeCreate(
-    dto: CreateVoucherDto,
-    loggedUserId: string,
-  ): Promise<void> {
+  protected async beforeCreate(dto: CreateVoucherDto, loggedUserId: string): Promise<void> {
     await checkEmptyObject(dto);
 
     const errors: IError[] = [];
 
-    const normalizedCode = normalizeCode(dto.code);
+    let code = genVoucherCode();
 
-    // 1. Check unique code
-    if (await this.repo.existsByField(VoucherFieldName.CODE, normalizedCode)) {
-      errors.push({
-        field: VoucherFieldName.CODE,
-        message: MSG_BUSINESS.ITEM_EXISTS("Voucher code"),
-      });
+    // 0: check unique
+    while (await this.repo.existsByField(VoucherFieldName.CODE, code)) {
+      code = genVoucherCode();
+    }
+
+    // 1. Validate product franchise
+    if (dto.product_franchise_id) {
+      const productFranchise = await this.productFranchiseQuery.getById(dto.product_franchise_id);
+
+      if (!productFranchise) {
+        errors.push({
+          field: BaseFieldName.PRODUCT_FRANCHISE_ID,
+          message: "Product franchise not found",
+        });
+      } else if (productFranchise.franchise_id.toString() !== dto.franchise_id) {
+        errors.push({
+          field: BaseFieldName.PRODUCT_FRANCHISE_ID,
+          message: "Product franchise does not belong to franchise",
+        });
+      }
     }
 
     // 2. Validate dates
-    if (new Date(dto.start_date) >= new Date(dto.end_date)) {
+    if (dto.start_date >= dto.end_date) {
       errors.push({
         field: VoucherFieldName.START_DATE,
-        message: "start date must be before end date",
+        message: "Start date must be before End date",
+      });
+    }
+
+    if (dto.start_date < new Date()) {
+      errors.push({
+        field: VoucherFieldName.START_DATE,
+        message: "Start date must be in the future",
       });
     }
 
     // 3. Validate quota
-    if (dto.quota_total < 0) {
+    if (dto.quota_total < 1) {
       errors.push({
         field: VoucherFieldName.QUOTA_TOTAL,
         message: "quota_total must be above 1",
@@ -91,16 +95,12 @@ export class VoucherService
 
     dto.created_by = loggedUserId;
 
-    if (errors.length)
-      throw new HttpException(HttpStatus.BadRequest, "", errors);
+    if (errors.length) throw new HttpException(HttpStatus.BadRequest, "", errors);
 
-    dto.code = normalizedCode;
+    dto.code = code;
   }
 
-  protected async afterCreate(
-    item: IVoucher,
-    loggedUserId: string,
-  ): Promise<void> {
+  protected async afterCreate(item: IVoucher, loggedUserId: string): Promise<void> {
     const snapshot = pickAuditSnapshot(item, AUDIT_FIELDS_ITEM);
     await this.auditLogger.log({
       entityType: AuditEntityType.VOUCHER,
@@ -111,21 +111,15 @@ export class VoucherService
     });
   }
 
-  protected async beforeUpdate(
-    current: IVoucher,
-    dto: UpdateVoucherDto,
-    loggedUserId: string,
-  ): Promise<void> {
+  protected async beforeUpdate(current: IVoucher, dto: UpdateVoucherDto, loggedUserId: string): Promise<void> {
     await checkEmptyObject(dto);
 
     const errors: IError[] = [];
 
-    const start = dto.start_date
-      ? new Date(dto.start_date)
-      : current.start_date;
+    const start = dto.start_date ?? current.start_date;
+    const end = dto.end_date ?? current.end_date;
 
-    const end = dto.end_date ? new Date(dto.end_date) : current.end_date;
-
+    // validate date
     if (start >= end) {
       errors.push({
         field: VoucherFieldName.START_DATE,
@@ -133,27 +127,29 @@ export class VoucherService
       });
     }
 
-    if (dto.quota_total !== undefined && dto.quota_total < 0) {
+    // validate quota
+    if (dto.quota_total !== undefined && dto.quota_total < 1) {
       errors.push({
         field: VoucherFieldName.QUOTA_TOTAL,
-        message: "quota_total must be >= 0",
+        message: "quota_total must be >= 1",
       });
     }
 
-    if (errors.length)
+    // prevent quota < used
+    if (dto.quota_total !== undefined && dto.quota_total < current.quota_used) {
+      errors.push({
+        field: VoucherFieldName.QUOTA_TOTAL,
+        message: "quota_total cannot be less than quota_used",
+      });
+    }
+
+    if (errors.length) {
       throw new HttpException(HttpStatus.BadRequest, "", errors);
+    }
   }
 
-  protected async afterUpdate(
-    oldItem: IVoucher,
-    newItem: IVoucher,
-    loggedUserId: string,
-  ): Promise<void> {
-    const { oldData, newData } = buildAuditDiff(
-      oldItem,
-      newItem,
-      AUDIT_FIELDS_ITEM,
-    );
+  protected async afterUpdate(oldItem: IVoucher, newItem: IVoucher, loggedUserId: string): Promise<void> {
+    const { oldData, newData } = buildAuditDiff(oldItem, newItem, AUDIT_FIELDS_ITEM);
 
     if (newData && Object.keys(newData).length > 0) {
       await this.auditLogger.log({
@@ -167,10 +163,7 @@ export class VoucherService
     }
   }
 
-  protected async afterDelete(
-    item: IVoucher,
-    loggedUserId: string,
-  ): Promise<void> {
+  protected async afterDelete(item: IVoucher, loggedUserId: string): Promise<void> {
     await this.auditLogger.log({
       entityType: AuditEntityType.VOUCHER,
       entityId: String(item._id),
@@ -181,10 +174,7 @@ export class VoucherService
     });
   }
 
-  protected async afterRestore(
-    item: IVoucher,
-    loggedUserId: string,
-  ): Promise<void> {
+  protected async afterRestore(item: IVoucher, loggedUserId: string): Promise<void> {
     await this.auditLogger.log({
       entityType: AuditEntityType.VOUCHER,
       entityId: String(item._id),
@@ -195,21 +185,25 @@ export class VoucherService
     });
   }
 
-  protected async doSearch(
-    dto: SearchPaginationItemDto,
-  ): Promise<{ data: IVoucher[]; total: number }> {
+  protected async doSearch(dto: SearchPaginationItemDto): Promise<{ data: IVoucher[]; total: number }> {
     return this.voucherRepo.getItems(dto);
   }
 
   public async getById(id: string): Promise<IVoucher | null> {
-    return this.voucherRepo.findById(id);
+    return this.voucherRepo.getItem(id);
   }
 
-  public async changeStatus(
-    id: string,
-    is_active: boolean,
-    loggedUserId: string,
-  ): Promise<IVoucher | null> {
+  public async getDetail(id: string): Promise<IVoucher | null> {
+    const item = this.voucherRepo.getItem(id);
+
+    if (!item) {
+      throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.ITEM_NOT_FOUND);
+    }
+
+    return item;
+  }
+
+  public async changeStatus(id: string, is_active: boolean, loggedUserId: string): Promise<IVoucher | null> {
     const item = await this.voucherRepo.findById(id);
 
     if (!item) {

@@ -9,5 +9,9 @@ export class UpdateCartDto {
   @IsOptional()
   @IsString()
   phone!: string;
+
+  @IsOptional()
+  @IsString()
+  note!: string;
 }
 

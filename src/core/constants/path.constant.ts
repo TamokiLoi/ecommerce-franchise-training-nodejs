@@ -96,6 +96,8 @@ export const API_PATH = {
   PROMOTION_ID: "/api/promotions/:id",
   PROMOTION_RESTORE: "/api/promotions/:id/restore",
   PROMOTION_CHANGE_STATUS: "/api/promotions/:id/status",
+  GET_PROMOTIONS_BY_FRANCHISE: "/api/promotions/franchise/:franchiseId",
+  GET_PROMOTIONS_BY_PRODUCT_FRANCHISE: "/api/promotions/product-franchise/:productFranchiseId",
 
   // vouchers
   VOUCHER: "/api/vouchers",
@@ -103,6 +105,8 @@ export const API_PATH = {
   VOUCHER_ID: "/api/vouchers/:id",
   VOUCHER_RESTORE: "/api/vouchers/:id/restore",
   VOUCHER_CHANGE_STATUS: "/api/vouchers/:id/status",
+  GET_VOUCHERS_BY_FRANCHISE: "/api/vouchers/franchise/:franchiseId",
+  GET_VOUCHERS_BY_PRODUCT_FRANCHISE: "/api/vouchers/product-franchise/:productFranchiseId",
 
   // category franchises
   CATEGORY_FRANCHISE: "/api/category-franchises", // assign categories to franchise
@@ -149,6 +153,7 @@ export const API_PATH = {
   SHIFT_RESTORE: "/api/shifts/:id/restore",
   SHIFT_CHANGE_STATUS: "/api/shifts/:id/status",
   SHIFT_SELECT: "/api/shifts/select",
+  GET_ALL_SHIFT_BY_FRANCHISE: "/api/shifts/franchise/:franchiseId",
 
   SHIFT_ASSIGNMENT: "/api/shift-assignments",
   SHIFT_ASSIGNMENT_SEARCH: "/api/shift-assignments/search",
@@ -158,7 +163,8 @@ export const API_PATH = {
   SHIFT_ASSIGNMENT_BULK: "/api/shift-assignments/bulk",
   SHIFT_ASSIGNMENT_USER_ID: "/api/shift-assignments/user/:userId",
   SHIFT_ASSIGNMENT_FRANCHISE_ID: "/api/shift-assignments/franchise/:franchiseId",
-  SHIFT_ASSIGNMENT_BY_SHIFT_ID:"/api/shift-assigments/shift/:shiftId",
+  SHIFT_ASSIGNMENT_BY_SHIFT_ID:"/api/shift-assignments/shift/:shiftId",
+
   // client
   CLIENT: "/api/clients",
   CLIENT_FRANCHISES: "/api/clients/franchises",

@@ -29,6 +29,7 @@ const CartSchemaEntity = new Schema({
   [BaseFieldName.VOUCHER_CODE]: { type: String, required: false },
   [BaseFieldName.ADDRESS]: { type: String, required: false },
   [BaseFieldName.PHONE]: { type: String, required: false },
+  [BaseFieldName.NOTE]: { type: String, required: false },
 
   // --- Loyalty ---
   [BaseFieldName.LOYALTY_POINTS_USED]: { type: Number, default: 0 }, // tổng point đã dùng cho cart này

@@ -38,8 +38,11 @@ export const verifyCustomerToken = async (token: string): Promise<AuthPayload> =
   return payload;
 };
 
-export const getTokenFromRequest = (req: Request) => {
-  let token = req.cookies?.access_token || req.cookies?.customer_access_token;
+export const getTokenFromRequest = (req: Request, isCustomer = true) => {
+  let token = req.cookies?.access_token;
+  if (isCustomer) {
+    token = req.cookies?.customer_access_token;
+  }
 
   const authHeader = req.headers["authorization"];
 

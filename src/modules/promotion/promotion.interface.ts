@@ -4,8 +4,12 @@ import { IBase } from "../../core/interfaces";
 import { PromotionFieldName, PromotionType } from "./promotion.enum";
 
 export interface IPromotion extends Document, IBase {
+  [BaseFieldName.NAME]: string;
   [BaseFieldName.FRANCHISE_ID]: Types.ObjectId;
+  franchise_name?: string;
   [PromotionFieldName.PRODUCT_FRANCHISE_ID]?: Types.ObjectId;
+  product_id?: string;
+  product_name?: string;
   [PromotionFieldName.TYPE]: PromotionType;
   [PromotionFieldName.VALUE]: number;
   [PromotionFieldName.START_DATE]: Date;

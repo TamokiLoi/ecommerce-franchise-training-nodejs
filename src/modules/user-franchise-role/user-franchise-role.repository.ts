@@ -36,13 +36,20 @@ export class UserFranchiseRoleRepository extends BaseRepository<IUserFranchiseRo
 
     let matchQuery: Record<string, any> = {};
 
+    if (user_id && Types.ObjectId.isValid(user_id)) {
+      matchQuery.shift_id = new Types.ObjectId(user_id);
+    }
+
+    if (franchise_id && Types.ObjectId.isValid(franchise_id)) {
+      matchQuery.franchise_id = new Types.ObjectId(franchise_id);
+    }
+
+    if (role_id && Types.ObjectId.isValid(role_id)) {
+      matchQuery.role_id = new Types.ObjectId(role_id);
+    }
+
     // common + dynamic filters
-    matchQuery = formatItemsQuery(matchQuery, {
-      is_deleted,
-      user_id,
-      franchise_id,
-      role_id,
-    });
+    matchQuery = formatItemsQuery(matchQuery, { is_deleted });
 
     const skip = (pageNum - 1) * pageSize;
 

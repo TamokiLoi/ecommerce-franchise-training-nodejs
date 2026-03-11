@@ -38,20 +38,10 @@ ShiftService> {
         
       const data = shifts.map((s) => ({ 
         value: String(s._id), 
-        name: s.name,
+        name: `${s.name} (${s.start_time} - ${s.end_time})`,
         franchise_id: s.franchise_id?.toString()
       }));
       res.status(HttpStatus.Success).json(formatResponse(data));
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  public getAllShiftsByFranchiseId = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { id } = req.params;
-      const shifts = await this.service.getAllShiftsByFranchise(id);
-      res.status(HttpStatus.Success).json(formatResponse(shifts));
     } catch (error) {
       next(error);
     }

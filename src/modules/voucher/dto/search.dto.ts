@@ -1,17 +1,6 @@
 import { Transform, Type } from "class-transformer";
-import {
-  IsDateString,
-  IsEnum,
-  IsMongoId,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Min,
-} from "class-validator";
-import {
-  BaseSearchItemDto,
-  SearchPaginationRequestModel,
-} from "../../../core/models";
+import { IsDateString, IsEnum, IsMongoId, IsNumber, IsOptional, IsString, Min } from "class-validator";
+import { BaseSearchItemDto, SearchPaginationRequestModel } from "../../../core/models";
 import { VoucherType } from "../voucher.enum";
 
 export class SearchItemDto extends BaseSearchItemDto {

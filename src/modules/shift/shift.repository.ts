@@ -120,7 +120,7 @@ export class ShiftRepository
       .lean() as unknown as IShift[];
   }
 
-  public async getFranchiseIdbyShiftId(id: string): Promise<string | null> {
+  public async getFranchiseIdByShiftId(id: string): Promise<string | null> {
     const shift = await this.model
       .findById(id)
       .select("franchise_id")

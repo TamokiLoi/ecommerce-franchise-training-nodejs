@@ -1,19 +1,15 @@
 import { Type } from "class-transformer";
 import {
-  IsDateString,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Min,
+    IsDate,
+    IsEnum,
+    IsNumber,
+    IsOptional,
+    IsString,
+    Min
 } from "class-validator";
 import { VoucherType } from "../voucher.enum";
 
-export class UpdateVoucherDto {
-  @IsOptional()
-  @IsString()
-  code?: string;
-  
+export class UpdateVoucherDto {  
   @IsOptional()
   @IsString()
   name?: string;
@@ -39,10 +35,12 @@ export class UpdateVoucherDto {
   quota_total?: number;
 
   @IsOptional()
-  @IsDateString()
+  @IsDate()
+  @Type(() => Date)
   start_date?: Date;
 
   @IsOptional()
-  @IsDateString()
+  @IsDate()
+  @Type(() => Date)
   end_date?: Date;
 }

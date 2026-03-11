@@ -30,42 +30,33 @@ export default class ShiftRoute implements IRoute {
      *     description: Shift related endpoints
      */
 
-    /**
-     * @swagger
-     * /api/shifts/search:
-     *   post:
-     *     summary: Search shifts with pagination
-     *     tags: [Shift]
-     *     security:
-     *       - bearerAuth: []
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             properties:
-     *               searchCondition:
-     *                 type: object
-     *                 properties:
-     *                   name:
-     *                     type: string
-     *                   franchise_id:
-     *                     type: string
-     *               pageInfo:
-     *                 type: object
-     *                 required: [pageNum, pageSize]
-     *                 properties:
-     *                   pageNum:
-     *                     type: integer
-     *                     default: 1
-     *                   pageSize:
-     *                     type: integer
-     *                     default: 10
-     *     responses:
-     *       200:
-     *         description: Get shifts successfully
-     */
+    // GET domain:/api/shifts/select - Get select items and by franchiseId
+    this.router.get(
+      API_PATH.SHIFT_SELECT,
+      adminAuthMiddleware(),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
+      this.controller.getAllShifts,
+    );
+
+    // PATCH domain:/api/shifts/:id/status - Change status item
+    this.router.patch(
+      API_PATH.SHIFT_CHANGE_STATUS,
+      adminAuthMiddleware(),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
+      validationMiddleware(UpdateStatusDto),
+      this.controller.changeStatus,
+    );
+
+    // POST domain:/api/shifts - Create item
+    this.router.post(
+      this.path,
+      adminAuthMiddleware(),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
+      validationMiddleware(CreateShiftDto),
+      this.controller.createItem,
+    );
+
+    // POST domain:/api/shifts/search - Search items by conditions
     this.router.post(
       API_PATH.SHIFT_SEARCH,
       adminAuthMiddleware(),
@@ -76,124 +67,15 @@ export default class ShiftRoute implements IRoute {
       this.controller.getItems,
     );
 
-    /**
-     * @swagger
-     * /api/shifts:
-     *   post:
-     *     summary: Create new shift
-     *     tags: [Shift]
-     *     security:
-     *       - bearerAuth: []
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required: [name, franchise_id, start_time, end_time]
-     *             properties:
-     *               name:
-     *                 type: string
-     *               franchise_id:
-     *                 type: string
-     *               start_time:
-     *                 type: string
-     *               end_time:
-     *                 type: string
-     *     responses:
-     *       200:
-     *         description: Created successfully
-     */
-    this.router.post(
-      API_PATH.SHIFT,
-      adminAuthMiddleware(),
-      requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
-      validationMiddleware(CreateShiftDto),
-      this.controller.createItem,
-    );
-
-    /**
-     * @swagger
-     * /api/shifts/select:
-     *   get:
-     *     summary: Get active shifts
-     *     tags: [Shift]
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: query
-     *         name: franchise_id
-     *         required: true
-     *         schema:
-     *           type: string
-     *         description: Franchise ID to filter shifts by
-     *     responses:
-     *       200:
-     *         description: List of shifts for select
-     */
-    this.router.get(
-      API_PATH.SHIFT_SELECT,
-      adminAuthMiddleware(),
-      requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
-      this.controller.getAllShifts,
-    );
-
-    /**
-     * @swagger
-     * /api/shifts/{id}:
-     *   get:
-     *     summary: Get shift detail
-     *     tags: [Shift]
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: string
-     *     responses:
-     *       200:
-     *         description: Get shift successfully
-     */
+    // GET domain:/api/shifts/:id - Get item
     this.router.get(
       API_PATH.SHIFT_ID,
       adminAuthMiddleware(),
       requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
-      this.controller.getAllShiftsByFranchiseId,
+      this.controller.getItem,
     );
 
-    /**
-     * @swagger
-     * /api/shifts/{id}:
-     *   put:
-     *     summary: Update shift
-     *     tags: [Shift]
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: string
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             properties:
-     *               name:
-     *                 type: string
-     *               start_time:
-     *                 type: string
-     *               end_time:
-     *                 type: string
-     *     responses:
-     *       200:
-     *         description: Updated successfully
-     */
+    // PUT domain:/api/shifts/:id - Update item
     this.router.put(
       API_PATH.SHIFT_ID,
       adminAuthMiddleware(),
@@ -202,24 +84,7 @@ export default class ShiftRoute implements IRoute {
       this.controller.updateItem,
     );
 
-    /**
-     * @swagger
-     * /api/shifts/{id}:
-     *   delete:
-     *     summary: Soft delete shift
-     *     tags: [Shift]
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: string
-     *     responses:
-     *       200:
-     *         description: Deleted successfully
-     */
+    // DELETE domain:/api/shifts/:id - Soft delete item
     this.router.delete(
       API_PATH.SHIFT_ID,
       adminAuthMiddleware(),
@@ -227,65 +92,12 @@ export default class ShiftRoute implements IRoute {
       this.controller.softDeleteItem,
     );
 
-    /**
-     * @swagger
-     * /api/shifts/{id}/restore:
-     *   patch:
-     *     summary: Restore shift
-     *     tags: [Shift]
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: string
-     *     responses:
-     *       200:
-     *         description: Restored successfully
-     */
+    // PATCH domain:/api/shifts/:id/restore - Restore item
     this.router.patch(
       API_PATH.SHIFT_RESTORE,
       adminAuthMiddleware(),
       requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
       this.controller.restoreItem,
-    );
-
-    /**
-     * @swagger
-     * /api/shifts/{id}/status:
-     *   patch:
-     *     summary: Change shift status
-     *     tags: [Shift]
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: string
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required: [is_active]
-     *             properties:
-     *               is_active:
-     *                 type: boolean
-     *     responses:
-     *       200:
-     *         description: Status changed successfully
-     */
-    this.router.patch(
-      API_PATH.SHIFT_CHANGE_STATUS,
-      adminAuthMiddleware(),
-      requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
-      validationMiddleware(UpdateStatusDto),
-      this.controller.changeStatus,
     );
   }
 }

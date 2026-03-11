@@ -1,16 +1,12 @@
-import mongoose from "mongoose";
+import { Types } from "mongoose";
+import { MSG_BUSINESS } from "../../core";
 import { BaseFieldName, HttpStatus } from "../../core/enums";
 import { HttpException } from "../../core/exceptions";
 import { IError } from "../../core/interfaces";
 import { BaseCrudService } from "../../core/services";
-import { checkEmptyObject } from "../../core/utils";
-import {
-  AuditAction,
-  AuditEntityType,
-  buildAuditDiff,
-  IAuditLogger,
-  pickAuditSnapshot,
-} from "../audit-log";
+import { checkEmptyObject, normalizeText } from "../../core/utils";
+import { AuditAction, AuditEntityType, buildAuditDiff, IAuditLogger, pickAuditSnapshot } from "../audit-log";
+import { IProductFranchiseQuery } from "../product-franchise";
 import { CreatePromotionDto } from "./dto/create.dto";
 import { SearchPaginationItemDto } from "./dto/search.dto";
 import { UpdatePromotionDto } from "./dto/update.dto";
@@ -33,41 +29,62 @@ export class PromotionService extends BaseCrudService<
   UpdatePromotionDto,
   SearchPaginationItemDto
 > {
+  private readonly promotionRepo: PromotionRepository;
+
   constructor(
     repo: PromotionRepository,
     private readonly auditLogger: IAuditLogger,
+    private readonly productFranchiseQuery: IProductFranchiseQuery,
   ) {
     super(repo);
+    this.promotionRepo = repo;
   }
 
-  protected async beforeCreate(
-    dto: CreatePromotionDto,
-    loggedUserId: string,
-  ): Promise<void> {
+  protected async beforeCreate(dto: CreatePromotionDto, loggedUserId: string): Promise<void> {
     await checkEmptyObject(dto);
 
     const errors: IError[] = [];
 
-    // kt franchise id valid
-    if (!mongoose.isValidObjectId(dto.franchise_id)) {
+    const normalizedName = normalizeText(dto.name);
+    // We need to check name uniqueness within the same franchise
+    const isExist = await this.repo.existsByFilter({
+      [BaseFieldName.NAME]: normalizedName,
+      [BaseFieldName.FRANCHISE_ID]: new Types.ObjectId(dto.franchise_id),
+    });
+    if (isExist) {
       errors.push({
-        field: BaseFieldName.FRANCHISE_ID,
-        message: "Invalid franchise_id",
+        field: BaseFieldName.NAME,
+        message: MSG_BUSINESS.ITEM_EXISTS(`Promotion with Name: '${dto.name}' in this franchise`),
       });
     }
 
-    // kt product franchise id
-    if (!mongoose.isValidObjectId(dto.product_franchise_id)) {
-      errors.push({
-        field: PromotionFieldName.PRODUCT_FRANCHISE_ID,
-        message: "Invalid product_franchise_id",
-      });
+    if (dto.product_franchise_id) {
+      const productFranchise = await this.productFranchiseQuery.getById(dto.product_franchise_id);
+
+      if (!productFranchise) {
+        errors.push({
+          field: BaseFieldName.PRODUCT_FRANCHISE_ID,
+          message: "Product franchise not found",
+        });
+      } else if (productFranchise.franchise_id.toString() !== dto.franchise_id) {
+        errors.push({
+          field: BaseFieldName.PRODUCT_FRANCHISE_ID,
+          message: "Product franchise does not belong to franchise",
+        });
+      }
     }
 
-    if (new Date(dto.start_date) > new Date(dto.end_date)) {
+    if (dto.start_date >= dto.end_date) {
       errors.push({
         field: PromotionFieldName.START_DATE,
-        message: "Start date must be before end date",
+        message: "Start date must be before End date",
+      });
+    }
+
+    if (dto.start_date < new Date()) {
+      errors.push({
+        field: PromotionFieldName.START_DATE,
+        message: "Start date must be in the future",
       });
     }
 
@@ -78,10 +95,7 @@ export class PromotionService extends BaseCrudService<
     }
   }
 
-  protected async afterCreate(
-    item: IPromotion,
-    loggedUserId: string,
-  ): Promise<void> {
+  protected async afterCreate(item: IPromotion, loggedUserId: string): Promise<void> {
     const snapshot = pickAuditSnapshot(item, AUDIT_FIELDS_ITEM);
 
     await this.auditLogger.log({
@@ -93,20 +107,30 @@ export class PromotionService extends BaseCrudService<
     });
   }
 
-  protected async beforeUpdate(
-    current: IPromotion,
-    dto: UpdatePromotionDto,
-    loggedUserId: string,
-  ): Promise<void> {
-    await checkEmptyObject(dto);
+  protected async beforeUpdate(current: IPromotion, payload: UpdatePromotionDto, loggedUserId: string): Promise<void> {
+    await checkEmptyObject(payload);
 
     const errors: IError[] = [];
 
-    const start = dto.start_date
-      ? new Date(dto.start_date)
-      : current.start_date;
+    // Check unique name in franchise if name is being updated
+    if (payload.name && payload.name !== current.name) {
+      const normalizedName = normalizeText(payload.name);
+      // We need to check name uniqueness within the same franchise
+      const isExist = await this.repo.existsByFilter({
+        [BaseFieldName.NAME]: normalizedName,
+        [BaseFieldName.FRANCHISE_ID]: new Types.ObjectId(current.franchise_id.toString()),
+        _id: { $ne: current._id },
+      });
+      if (isExist) {
+        errors.push({
+          field: BaseFieldName.NAME,
+          message: MSG_BUSINESS.ITEM_EXISTS(`Promotion with Name: '${payload.name}' in this franchise`),
+        });
+      }
+    }
 
-    const end = dto.end_date ? new Date(dto.end_date) : current.end_date;
+    const start = payload.start_date ?? current.start_date;
+    const end = payload.end_date ?? current.end_date;
 
     if (start >= end) {
       errors.push({
@@ -115,21 +139,20 @@ export class PromotionService extends BaseCrudService<
       });
     }
 
+    if (start < new Date()) {
+      errors.push({
+        field: PromotionFieldName.START_DATE,
+        message: "Start date must be in the future",
+      });
+    }
+
     if (errors.length) {
       throw new HttpException(HttpStatus.BadRequest, "", errors);
     }
   }
 
-  protected async afterUpdate(
-    oldItem: IPromotion,
-    newItem: IPromotion,
-    loggedUserId: string,
-  ): Promise<void> {
-    const { oldData, newData } = buildAuditDiff(
-      oldItem,
-      newItem,
-      AUDIT_FIELDS_ITEM,
-    );
+  protected async afterUpdate(oldItem: IPromotion, newItem: IPromotion, loggedUserId: string): Promise<void> {
+    const { oldData, newData } = buildAuditDiff(oldItem, newItem, AUDIT_FIELDS_ITEM);
 
     if (newData && Object.keys(newData).length > 0) {
       await this.auditLogger.log({
@@ -143,10 +166,7 @@ export class PromotionService extends BaseCrudService<
     }
   }
 
-  protected async afterDelete(
-    item: IPromotion,
-    loggedUserId: string,
-  ): Promise<void> {
+  protected async afterDelete(item: IPromotion, loggedUserId: string): Promise<void> {
     await this.auditLogger.log({
       entityType: AuditEntityType.PROMOTION,
       entityId: String(item._id),
@@ -157,10 +177,7 @@ export class PromotionService extends BaseCrudService<
     });
   }
 
-  protected async afterRestore(
-    item: IPromotion,
-    loggedUserId: string,
-  ): Promise<void> {
+  protected async afterRestore(item: IPromotion, loggedUserId: string): Promise<void> {
     await this.auditLogger.log({
       entityType: AuditEntityType.PROMOTION,
       entityId: String(item._id),
@@ -171,21 +188,25 @@ export class PromotionService extends BaseCrudService<
     });
   }
 
-  protected async doSearch(
-    dto: SearchPaginationItemDto,
-  ): Promise<{ data: IPromotion[]; total: number }> {
+  protected async doSearch(dto: SearchPaginationItemDto): Promise<{ data: IPromotion[]; total: number }> {
     return (this.repo as PromotionRepository).getItems(dto);
   }
 
-  public async getById(id: string) {
-    return this.repo.findById(id);
+  public async getById(id: string): Promise<IPromotion | null> {
+    return this.promotionRepo.getItem(id);
   }
 
-  public async changeStatus(
-    id: string,
-    is_active: boolean,
-    loggedUserId: string,
-  ): Promise<IPromotion | null> {
+  public async getDetail(id: string): Promise<IPromotion | null> {
+    const item = this.promotionRepo.getItem(id);
+
+    if (!item) {
+      throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.ITEM_NOT_FOUND);
+    }
+
+    return item;
+  }
+
+  public async changeStatus(id: string, is_active: boolean, loggedUserId: string): Promise<IPromotion | null> {
     const item = await this.repo.findById(id);
 
     if (!item) {
@@ -215,9 +236,7 @@ export class PromotionService extends BaseCrudService<
     });
   }
 
-  public async getAllPromotionsByProductFranchiseId(
-    productFranchiseId: string,
-  ) {
+  public async getAllPromotionsByProductFranchiseId(productFranchiseId: string) {
     return this.repo.find({
       product_franchise_id: productFranchiseId,
       is_deleted: false,

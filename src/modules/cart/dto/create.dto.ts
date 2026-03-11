@@ -26,6 +26,10 @@ export class AddToCartDto {
   @IsString()
   phone!: string;
 
+  @IsOptional()
+  @IsString()
+  note!: string;
+
   // optional options
   @IsOptional()
   @ValidateNested({ each: true })

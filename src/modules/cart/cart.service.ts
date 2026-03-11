@@ -1,14 +1,14 @@
 import { Types } from "mongoose";
 import {
-    BaseCrudService,
-    BaseFieldName,
-    BaseRole,
-    CartStatus,
-    CustomerAuthPayload,
-    HttpException,
-    HttpStatus,
-    MSG_BUSINESS,
-    UserAuthPayload,
+  BaseCrudService,
+  BaseFieldName,
+  BaseRole,
+  CartStatus,
+  CustomerAuthPayload,
+  HttpException,
+  HttpStatus,
+  MSG_BUSINESS,
+  UserAuthPayload,
 } from "../../core";
 import { IAuditLogger } from "../audit-log";
 import { ICartItemQuery } from "../cart-item";
@@ -167,9 +167,84 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
     }
 
     /**
-     * STEP 9 — Return cart detail
+     * STEP 9 — Recalculate cart
+     */
+    await this.recalculateCart(cart._id);
+
+    /**
+     * STEP 10 — Return cart detail
      */
     return this.cartRepo.getCartDetail(cart._id);
+  }
+
+  public async removeCartItem(cartItemId: string, loggedUser: UserAuthPayload | CustomerAuthPayload) {
+    const cartItem = await this.cartItemQuery.getById(cartItemId);
+
+    if (!cartItem) throw new Error("Cart item not found");
+
+    await this.cartItemService.removeCartItem(cartItemId, loggedUser);
+
+    await this.recalculateCart(cartItem.cart_id);
+
+    return this.cartRepo.getCartDetail(cartItem.cart_id);
+  }
+
+  public async updateOptionItem(
+    payload: UpdateQuantityOptionItemDto,
+    loggedUser: UserAuthPayload | CustomerAuthPayload,
+  ) {
+    const cartItem = await this.cartOptionItemService.updateOptionItem(payload, loggedUser);
+
+    if (!cartItem) throw new Error("Cart item not found");
+
+    await this.recalculateCart(cartItem.cart_id);
+
+    return this.cartRepo.getCartDetail(cartItem.cart_id);
+  }
+
+  public async removeOptionItem(
+    payload: UpdateQuantityOptionItemDto,
+    loggedUser: UserAuthPayload | CustomerAuthPayload,
+  ) {
+    const cartItem = await this.cartOptionItemService.removeOptionItem(payload, loggedUser);
+
+    if (!cartItem) throw new Error("Cart item not found");
+
+    await this.recalculateCart(cartItem.cart_id);
+
+    return this.cartRepo.getCartDetail(cartItem.cart_id);
+  }
+
+  private async recalculateCart(cartId: Types.ObjectId) {
+    const items = await this.cartItemQuery.getItemsByCartId(cartId);
+
+    let subtotal = 0;
+
+    for (const item of items) {
+      const optionTotal = (item.options || []).reduce((sum, opt) => sum + opt.quantity * opt.price_snapshot, 0);
+
+      const lineTotal = item.quantity * item.product_cart_price + optionTotal;
+
+      const finalLineTotal = lineTotal - (item.discount_amount || 0);
+
+      item.line_total = lineTotal;
+      item.final_line_total = finalLineTotal;
+
+      await item.save();
+
+      subtotal += finalLineTotal;
+    }
+
+    const cart = await this.cartRepo.findByIdForUpdate(cartId.toString());
+
+    if(!cart) throw new Error("Cart not found");
+
+    cart.subtotal_amount = subtotal;
+
+    cart.final_amount =
+      subtotal - (cart.promotion_discount || 0) - (cart.voucher_discount || 0) - (cart.loyalty_discount || 0);
+
+    await cart.save();
   }
 
   public async getCartDetail(cartId: string): Promise<ICart> {
@@ -184,26 +259,5 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
     const cart = await this.cartRepo.getCartStatusActive(customerId, franchiseId);
     if (!cart) return null;
     return this.cartRepo.getCartDetail(cart._id);
-  }
-
-  public async removeCartItem(
-    cartItemId: string,
-    loggedUser: UserAuthPayload | CustomerAuthPayload,
-  ) {
-    return this.cartItemService.removeCartItem(cartItemId, loggedUser);
-  }
-
-  public async updateOptionItem(
-    payload: UpdateQuantityOptionItemDto,
-    loggedUser: UserAuthPayload | CustomerAuthPayload,
-  ) {
-    return this.cartOptionItemService.updateOptionItem(payload, loggedUser);
-  }
-
-  public async removeOptionItem(
-    payload: UpdateQuantityOptionItemDto,
-    loggedUser: UserAuthPayload | CustomerAuthPayload,
-  ) {
-    return this.cartOptionItemService.removeOptionItem(payload, loggedUser);
   }
 }

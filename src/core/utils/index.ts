@@ -1,3 +1,4 @@
+import { genVoucherCode } from "./code";
 import { sendMail } from "./email";
 import {
   encodePassword,
@@ -22,6 +23,7 @@ export {
   formatResponse,
   formatSearchPaginationResponse,
   generateRandomPassword,
+  genVoucherCode,
   isEmptyPlainObject,
   logger,
   normalizeParam,
@@ -31,5 +33,5 @@ export {
   withTransaction,
 };
 
-export * from "./normalize";
 export * from "./id.util";
+export * from "./normalize";
