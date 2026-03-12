@@ -116,4 +116,16 @@ export class CustomerRepository extends BaseRepository<ICustomer> {
       { new: true, session },
     );
   }
+
+  public async searchByKeyword(keyword: string): Promise<ICustomer[]> {
+    if (!keyword) return [];
+
+    const normalizedKeyword = keyword.trim();
+    const regex = new RegExp(normalizedKeyword, "i");
+
+    return this.model.find({
+      is_deleted: false,
+      $or: [{ name: regex }, { email: regex }, { phone: regex }],
+    });
+  }
 }

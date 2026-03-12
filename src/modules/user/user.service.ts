@@ -233,4 +233,8 @@ export default class UserService extends BaseCrudService<IUser, CreateUserDto, U
       changedBy: loggedUserId,
     });
   }
+
+  public async searchByKeyword(keyword: string): Promise<IUser[]> {
+    return this.userRepo.searchByKeyword(keyword);
+  }
 }

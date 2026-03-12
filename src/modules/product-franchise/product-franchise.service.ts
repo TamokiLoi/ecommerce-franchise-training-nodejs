@@ -290,6 +290,11 @@ export class ProductFranchiseService
     return items.map(mapItemToResponse);
   }
 
+  public async getProductsByFranchiseId(franchiseId: string): Promise<PublicProductFranchiseItemDto[]> {
+    const items = await this.getItemsByFranchiseId(franchiseId);
+    return items.map(mapItemToResponse);
+  }
+
   // ==== Validation helpers =====
   private validatePriceBaseWithProduct(
     priceBase: number,

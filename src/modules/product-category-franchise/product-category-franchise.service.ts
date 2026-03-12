@@ -257,6 +257,31 @@ export class ProductCategoryFranchiseService
     });
   }
 
+  public async getProductsWithCategoriesByFranchise(franchiseId: string) {
+    // 1️⃣ get data từ 2 repo
+    const productFranchiseItems = await this.productFranchiseQuery.getProductsByFranchiseId(franchiseId);
+
+    const productCategoryFranchiseItems =
+      await this.productCategoryFranchiseRepo.getProductsWithCategories(franchiseId);
+
+    // 2️⃣ tạo map để lookup categories theo product_franchise_id
+    const categoryMap = new Map<string, any[]>();
+
+    for (const item of productCategoryFranchiseItems) {
+      categoryMap.set(item.product_franchise_id.toString(), item.categories || []);
+    }
+
+    // 3️⃣ merge product + categories
+    const result = productFranchiseItems.map((product) => ({
+      ...product,
+      categories: categoryMap.get(product.product_franchise_id?.toString()) || [],
+    }));
+
+    // 4️⃣ sort để các size của cùng product đứng gần nhau
+    result.sort((a, b) => a.product_id.localeCompare(b.product_id));
+
+    return result;
+  }
   // Support for IProductCategoryFranchiseQuery
   // TODO: consider caching for better performance
   public async getById(id: string): Promise<IProductCategoryFranchise | null> {

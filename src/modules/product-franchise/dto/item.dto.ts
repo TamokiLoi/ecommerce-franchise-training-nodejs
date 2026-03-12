@@ -1,6 +1,5 @@
 import { BaseItemDto } from "../../../core/dto";
 
-
 export interface ProductFranchiseItemDto extends BaseItemDto, PublicProductFranchiseItemDto {
   product_id: string;
   product_name: string;
@@ -11,6 +10,7 @@ export interface ProductFranchiseItemDto extends BaseItemDto, PublicProductFranc
 }
 
 export interface PublicProductFranchiseItemDto {
+  product_franchise_id: string;
   product_id: string;
   product_name: string;
   product_sku: string;

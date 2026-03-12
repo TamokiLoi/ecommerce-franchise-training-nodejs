@@ -1,16 +1,16 @@
 import { Router } from "express";
 import {
-    adminAuthMiddleware,
-    API_PATH,
-    authMiddleware,
-    customerAuthMiddleware,
-    IRoute,
-    requireMoreContext,
-    SYSTEM_ADMIN_ROLES,
-    SYSTEM_AND_FRANCHISE_ALL_ROLES,
-    SYSTEM_AND_FRANCHISE_MANAGER_ROLES,
-    UpdateStatusDto,
-    validationMiddleware
+  adminAuthMiddleware,
+  API_PATH,
+  authMiddleware,
+  customerAuthMiddleware,
+  IRoute,
+  requireMoreContext,
+  SYSTEM_ADMIN_ROLES,
+  SYSTEM_AND_FRANCHISE_ALL_ROLES,
+  SYSTEM_AND_FRANCHISE_MANAGER_ROLES,
+  UpdateStatusDto,
+  validationMiddleware,
 } from "../../core";
 import { CustomerController } from "./customer.controller";
 import CreateCustomerDto from "./dto/create.dto";
@@ -31,6 +31,14 @@ export default class CustomerRoute implements IRoute {
      *   - name: Customer
      *     description: Customer related endpoints
      */
+
+    // GET domain:/api/customers/find?keyword="" -> Search customer for select items by: name, email, phone
+    this.router.get(
+      API_PATH.CUSTOMER_FIND,
+      adminAuthMiddleware(),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
+      this.controller.searchByKeyword,
+    );
 
     // POST domain:/api/customers/register - Register new customer (used by self-end-user registration)
     this.router.post(API_PATH.CUSTOMER_REGISTER, validationMiddleware(CreateCustomerDto), this.controller.createItem);

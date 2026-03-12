@@ -19,6 +19,7 @@ export const mapItemToResponse = (item: IProductFranchise): ProductFranchiseItem
 
 export const mapItemToPublicResponse = (item: IProductFranchise): PublicProductFranchiseItemDto => {
   return {
+    product_franchise_id: String(item._id),
     product_id: String(item.product_id),
     product_name: item.product_name,
     product_sku: item.product_sku,

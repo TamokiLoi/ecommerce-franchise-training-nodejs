@@ -96,4 +96,15 @@ export class UserRepository extends BaseRepository<IUser> {
   public async findUserByIdWithPassword(userId: string): Promise<IUser | null> {
     return this.model.findOne({ _id: userId, is_deleted: false }).exec();
   }
+
+  public async searchByKeyword(keyword: string): Promise<IUser[]> {
+    if (!keyword) return [];
+    const normalizedKeyword = keyword.trim();
+    const regex = new RegExp(normalizedKeyword, "i");
+
+    return this.model.find({
+      is_deleted: false,
+      $or: [{ name: regex }, { email: regex }],
+    });
+  }
 }

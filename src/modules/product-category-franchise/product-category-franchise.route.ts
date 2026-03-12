@@ -91,5 +91,21 @@ export default class ProductCategoryFranchiseRoute implements IRoute {
       validationMiddleware(UpdateDisplayOrderItemDto),
       this.controller.reorder,
     );
+
+    // GET domain:/api/product-category-franchises/:id - Get detail
+    this.router.get(
+      API_PATH.PRODUCT_CATEGORY_FRANCHISE_ID,
+      adminAuthMiddleware(),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
+      this.controller.getItem,
+    );
+
+    // GET domain:/api/product-category-franchises/franchise/:franchiseId - Get products with category by franchise
+    this.router.get(
+      API_PATH.GET_PRODUCTS_WITH_CATEGORY_BY_FRANCHISE,
+      adminAuthMiddleware(),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
+      this.controller.getProductsWithCategories,
+    );
   }
 }

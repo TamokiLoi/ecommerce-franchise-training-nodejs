@@ -1,7 +1,5 @@
-// import { v4 as uuidv4 } from "uuid";
+import { generateRandomPassword } from "./helpers";
 
 export const genVoucherCode = (): string => {
-//   const uuid = uuidv4().replace(/-/g, "");
-//   const shortId = uuid.substring(0, 10).toUpperCase();
-  return `VOUCHER_${1234}`;
+  return generateRandomPassword(10).toUpperCase();
 };

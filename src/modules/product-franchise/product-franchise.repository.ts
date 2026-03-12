@@ -73,6 +73,8 @@ export class ProductFranchiseRepository extends BaseRepository<IProductFranchise
       // 5️⃣ Project DTO
       {
         $project: {
+          _id: "$_id",
+          product_franchise_id: "$_id",
           product_id: "$product._id",
           product_name: "$product.name",
           product_sku: "$product.SKU",

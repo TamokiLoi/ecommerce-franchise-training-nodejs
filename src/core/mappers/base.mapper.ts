@@ -28,10 +28,17 @@ export const mapBaseResponseNoActive = (entity: MongoBaseEntity) => {
   };
 };
 
-export const mapItemToSelect = <T extends { _id: any; code: string; name: string }>(item: T): BaseItemSelectDto => {
+export const mapItemToSelect = <
+  T extends { _id: any; code: string; name: string; email?: string; phone?: string; image?: string },
+>(
+  item: T,
+): BaseItemSelectDto => {
   return {
     value: String(item._id),
     code: item.code,
     name: item.name,
+    email: item.email,
+    phone: item.phone,
+    image: item.image,
   };
 };

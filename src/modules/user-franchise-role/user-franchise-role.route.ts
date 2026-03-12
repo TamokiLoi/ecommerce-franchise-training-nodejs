@@ -81,5 +81,13 @@ export default class UserFranchiseRoleRoute implements IRoute {
       requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
       this.controller.getAllRolesByUserId,
     );
+
+    // GET domain:/api/user-franchise-roles/franchise/:franchiseId - Get users by franchiseId
+    this.router.get(
+      API_PATH.USER_FRANCHISE_ROLE_BY_FRANCHISE_ID,
+      adminAuthMiddleware(),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
+      this.controller.getUsersByFranchiseId,
+    );
   }
 }

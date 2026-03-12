@@ -42,6 +42,7 @@ export const API_PATH = {
   USER_RESTORE: "/api/users/:id/restore",
   USER_CHANGE_ROLE: "/api/users/:id/change-role",
   USER_ROLES: "/api/users/:id/roles",
+  USER_FIND: "/api/users/find",
 
   // user franchise roles
   USER_FRANCHISE_ROLE: "/api/user-franchise-roles",
@@ -51,6 +52,9 @@ export const API_PATH = {
 
   // user franchise roles by user
   USER_FRANCHISE_ROLE_BY_USER_ID: "/api/user-franchise-roles/user/:userId",
+
+  // get users by franchise
+  USER_FRANCHISE_ROLE_BY_FRANCHISE_ID: "/api/user-franchise-roles/franchise/:franchiseId",
 
   // customer auth
   CUSTOMER_AUTH: "/api/customer-auth",
@@ -68,6 +72,7 @@ export const API_PATH = {
   CUSTOMER_CHANGE_STATUS: "/api/customers/:id/status",
   CUSTOMER_RESTORE: "/api/customers/:id/restore",
   CUSTOMER_REGISTER: "/api/customers/register",
+  CUSTOMER_FIND: "/api/customers/find",
 
   // customer franchises
   CUSTOMER_FRANCHISE: "/api/customer-franchises",
@@ -89,7 +94,7 @@ export const API_PATH = {
   PRODUCT_ID: "/api/products/:id",
   PRODUCT_RESTORE: "/api/products/:id/restore",
   PRODUCT_SELECT: "/api/products/select",
-  
+
   // promotions
   PROMOTION: "/api/promotions",
   PROMOTION_SEARCH: "/api/promotions/search",
@@ -134,6 +139,7 @@ export const API_PATH = {
   PRODUCT_CATEGORY_FRANCHISE_CHANGE_STATUS: "/api/product-category-franchises/:id/status",
   PRODUCT_CATEGORY_FRANCHISE_REORDER: "/api/product-category-franchises/reorder", // reorder product by category of franchise
   GET_PRODUCTS_BY_CATEGORY: "/api/product-category-franchises/:categoryId", // get product by category of franchise
+  GET_PRODUCTS_WITH_CATEGORY_BY_FRANCHISE: "/api/product-category-franchises/franchise/:franchiseId",
 
   INVENTORY: "/api/inventories",
   INVENTORY_SEARCH: "/api/inventories/search",
@@ -163,7 +169,7 @@ export const API_PATH = {
   SHIFT_ASSIGNMENT_BULK: "/api/shift-assignments/bulk",
   SHIFT_ASSIGNMENT_USER_ID: "/api/shift-assignments/user/:userId",
   SHIFT_ASSIGNMENT_FRANCHISE_ID: "/api/shift-assignments/franchise/:franchiseId",
-  SHIFT_ASSIGNMENT_BY_SHIFT_ID:"/api/shift-assignments/shift/:shiftId",
+  SHIFT_ASSIGNMENT_BY_SHIFT_ID: "/api/shift-assignments/shift/:shiftId",
 
   // client
   CLIENT: "/api/clients",

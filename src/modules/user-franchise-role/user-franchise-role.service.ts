@@ -1,3 +1,4 @@
+import { ObjectId } from "mongodb";
 import { Types } from "mongoose";
 import { MSG_BUSINESS } from "../../core/constants";
 import { BaseFieldName, GLOBAL_FRANCHISE_ID, HttpStatus, RoleScope } from "../../core/enums";
@@ -14,7 +15,6 @@ import { SearchPaginationItemDto } from "./dto/search.dto";
 import UpdateUserFranchiseRoleDto from "./dto/update.dto";
 import { IUserFranchiseRole, IUserFranchiseRoleQuery } from "./user-franchise-role.interface";
 import { UserFranchiseRoleRepository } from "./user-franchise-role.repository";
-import { ObjectId } from "mongodb";
 
 export const AUDIT_FIELDS_ITEM = [
   BaseFieldName.FRANCHISE_ID,
@@ -215,6 +215,10 @@ export default class UserFranchiseRoleService
   // Get all franchise roles of a user by userId
   public async getAllRolesByUserId(userId: string): Promise<IUserFranchiseRole[]> {
     return this.userFranchiseRoleRepo.getAllRolesByUserId(userId);
+  }
+
+  public async getUsersByFranchiseId(franchiseId: string): Promise<any[]> {
+    return this.userFranchiseRoleRepo.getUsersByFranchiseId(franchiseId);
   }
 
   // Interface method (not API)

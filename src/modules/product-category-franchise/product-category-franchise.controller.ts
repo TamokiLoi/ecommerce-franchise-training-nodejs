@@ -45,4 +45,14 @@ export default class ProductCategoryFranchiseController extends BaseCrudControll
       next(error);
     }
   };
+
+  public getProductsWithCategories = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { franchiseId } = req.params;
+      const items = await this.service.getProductsWithCategoriesByFranchise(franchiseId);
+      res.status(HttpStatus.Success).json(formatResponse<any[]>(items));
+    } catch (error) {
+      next(error);
+    }
+  };
 }

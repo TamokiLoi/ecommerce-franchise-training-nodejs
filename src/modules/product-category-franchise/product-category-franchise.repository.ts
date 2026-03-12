@@ -1,8 +1,9 @@
-import { ClientSession, Types } from "mongoose";
+import { ClientSession, PipelineStage, Types } from "mongoose";
 import { BaseRepository, formatItemsQuery, HttpException, HttpStatus, MSG_BUSINESS } from "../../core";
 import { SearchItemDto, SearchPaginationItemDto } from "./dto/search.dto";
 import { IProductCategoryFranchise } from "./product-category-franchise.interface";
 import ProductCategoryFranchiseSchema from "./product-category-franchise.model";
+import { PublicProductFranchiseItemDto } from "../product-franchise/dto/item.dto";
 
 export class ProductCategoryFranchiseRepository extends BaseRepository<IProductCategoryFranchise> {
   constructor() {
@@ -283,5 +284,72 @@ export class ProductCategoryFranchiseRepository extends BaseRepository<IProductC
     }
 
     return result;
+  }
+
+  public async getProductsWithCategories(franchiseId: string): Promise<any[]> {
+    try {
+      const pipeline: PipelineStage[] = [
+        {
+          $match: {
+            is_deleted: false,
+          },
+        },
+
+        // JOIN category-franchise
+        {
+          $lookup: {
+            from: "categoryfranchises",
+            localField: "category_franchise_id",
+            foreignField: "_id",
+            as: "categoryFranchise",
+          },
+        },
+        { $unwind: "$categoryFranchise" },
+
+        // FILTER franchise
+        {
+          $match: {
+            "categoryFranchise.franchise_id": new Types.ObjectId(franchiseId),
+          },
+        },
+
+        // JOIN category
+        {
+          $lookup: {
+            from: "categories",
+            localField: "categoryFranchise.category_id",
+            foreignField: "_id",
+            as: "category",
+          },
+        },
+        { $unwind: "$category" },
+
+        // GROUP categories theo product_franchise_id
+        {
+          $group: {
+            _id: "$product_franchise_id",
+
+            categories: {
+              $addToSet: {
+                category_id: "$category._id",
+                category_name: "$category.name",
+              },
+            },
+          },
+        },
+
+        {
+          $project: {
+            _id: 0,
+            product_franchise_id: "$_id",
+            categories: 1,
+          },
+        },
+      ];
+
+      return await this.model.aggregate(pipeline);
+    } catch (error) {
+      throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.DATABASE_QUERY_FAILED);
+    }
   }
 }

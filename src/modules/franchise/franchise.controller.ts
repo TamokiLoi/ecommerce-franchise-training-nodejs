@@ -1,5 +1,13 @@
 import { NextFunction, Request, Response } from "express";
-import { AuthenticatedUserRequest, BaseCrudController, BaseItemSelectDto, formatResponse, HttpStatus, mapItemToSelect, UpdateStatusDto } from "../../core";
+import {
+  AuthenticatedUserRequest,
+  BaseCrudController,
+  BaseItemSelectDto,
+  formatResponse,
+  HttpStatus,
+  mapItemToSelect,
+  UpdateStatusDto,
+} from "../../core";
 import CreateFranchiseDto from "./dto/create.dto";
 import { FranchiseItemDto } from "./dto/item.dto";
 import { SearchPaginationItemDto } from "./dto/search.dto";
@@ -33,8 +41,14 @@ export default class FranchiseController extends BaseCrudController<
 
   public getAllFranchises = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const franchises = await this.service.getAllFranchises();
-      res.status(HttpStatus.Success).json(formatResponse<BaseItemSelectDto[]>(franchises.map(mapItemToSelect)));
+      const items = await this.service.getAllFranchises();
+      const selectItems = items.map((item) =>
+        mapItemToSelect({
+          ...item,
+          image: item.logo_url,
+        }),
+      );
+      res.status(HttpStatus.Success).json(formatResponse<BaseItemSelectDto[]>(selectItems));
     } catch (error) {
       next(error);
     }
