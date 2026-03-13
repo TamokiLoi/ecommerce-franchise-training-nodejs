@@ -14,6 +14,7 @@ import { CustomerFranchiseModule } from "./modules/customer-franchise";
 import { FranchiseModule } from "./modules/franchise";
 import { IndexModule } from "./modules/index";
 import { InventoryModule } from "./modules/inventory";
+import { LoyaltyRuleModule } from "./modules/loyalty-rule";
 import { ProductModule } from "./modules/product";
 import { ProductCategoryFranchiseModule } from "./modules/product-category-franchise";
 import { ProductFranchiseModule } from "./modules/product-franchise";
@@ -39,6 +40,7 @@ const roleModule = new RoleModule();
 const customerModule = new CustomerModule();
 const categoryModule = new CategoryModule();
 const productModule = new ProductModule();
+const loyaltyRuleModule = new LoyaltyRuleModule();
 
 // ===== Dependent modules =====
 const userFranchiseRoleModule = new UserFranchiseRoleModule(userModule, roleModule, franchiseModule);
@@ -57,7 +59,12 @@ const promotionModule = new PromotionModule(productFranchiseModule);
 const voucherModule = new VoucherModule(productFranchiseModule);
 
 // Public module (export to client)
-const clientModule = new ClientModule(franchiseModule, categoryFranchiseModule, productFranchiseModule);
+const clientModule = new ClientModule(
+  franchiseModule,
+  categoryFranchiseModule,
+  productFranchiseModule,
+  loyaltyRuleModule,
+);
 const cartItemModule = new CartItemModule();
 const cartModule = new CartModule(
   customerModule,
@@ -93,6 +100,7 @@ const routes = [
   voucherModule.getRoute(),
   shiftModule.getRoute(),
   shiftAssignmentModule.getRoute(),
+  loyaltyRuleModule.getRoute(),
 
   // Public route
   clientModule.getRoute(),

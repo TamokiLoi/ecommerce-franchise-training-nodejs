@@ -147,7 +147,7 @@ export class ShiftService
     // check if shift has been assigned to any user
     const isExist = await this.shiftAssign.getItemByShiftId(item._id.toString());
     if (isExist) {
-      throw new HttpException(HttpStatus.BAD_REQUEST, MSG_BUSINESS.SHIFT_IS_ASSIGNED_TO_SOME_USERS);
+      throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.SHIFT_IS_ASSIGNED_TO_SOME_USERS);
     }
   }
 
@@ -206,7 +206,7 @@ export class ShiftService
 
     const isExist = await this.shiftAssign.getItemByShiftId(id);
     if (isExist) {
-      throw new HttpException(HttpStatus.BAD_REQUEST, MSG_BUSINESS.SHIFT_IS_ASSIGNED_TO_SOME_USERS);
+      throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.SHIFT_IS_ASSIGNED_TO_SOME_USERS);
     }
 
     // 2. Check change status

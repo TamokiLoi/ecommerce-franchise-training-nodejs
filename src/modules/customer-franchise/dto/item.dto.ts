@@ -1,3 +1,5 @@
+import { BaseLoyaltyTier } from "../../../core";
+
 export interface CustomerFranchiseItemDto {
   id: string;
   customer_id: string;
@@ -7,7 +9,7 @@ export interface CustomerFranchiseItemDto {
   franchise_name: string;
   franchise_code: string;
   loyalty_points: number;
-  loyalty_tier: string;
+  current_tier: BaseLoyaltyTier;
   total_earned_points: number;
   first_order_date: string;
   last_order_date: string;

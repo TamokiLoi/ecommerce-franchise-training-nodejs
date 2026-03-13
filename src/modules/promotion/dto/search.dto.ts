@@ -1,17 +1,7 @@
 import { Transform, Type } from "class-transformer";
-import {
-    IsDateString,
-    IsEnum,
-    IsMongoId,
-    IsNumber,
-    IsOptional,
-    Min,
-} from "class-validator";
+import { IsDateString, IsEnum, IsMongoId, IsNumber, IsOptional, Min } from "class-validator";
 import { PriceType } from "../../../core";
-import {
-    BaseSearchItemDto,
-    SearchPaginationRequestModel,
-} from "../../../core/models";
+import { BaseSearchItemDto, SearchPaginationRequestModel } from "../../../core/models";
 
 export class SearchItemDto extends BaseSearchItemDto {
   @IsOptional()

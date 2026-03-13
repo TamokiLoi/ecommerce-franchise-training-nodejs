@@ -1,6 +1,7 @@
 import { IAuditLogger } from "../audit-log";
 import { ICategoryFranchiseQuery, PublicCategoryFranchiseItemDto } from "../category-franchise";
 import { IFranchise, IFranchiseQuery, IFranchiseQueryResult } from "../franchise";
+import { ILoyaltyRule, ILoyaltyRuleQuery } from "../loyalty-rule";
 import { IProductFranchiseQuery, PublicProductDetailDto, PublicProductItemDto } from "../product-franchise";
 
 export class ClientService {
@@ -9,6 +10,7 @@ export class ClientService {
     private readonly franchiseQuery: IFranchiseQuery,
     private readonly categoryFranchiseQuery: ICategoryFranchiseQuery,
     private readonly productFranchiseQuery: IProductFranchiseQuery,
+    private readonly loyaltyRuleQuery: ILoyaltyRuleQuery,
   ) {}
 
   // Get list franchise
@@ -42,5 +44,10 @@ export class ClientService {
   // Get franchise detail
   public async getFranchiseDetail(franchiseId: string): Promise<IFranchise | null> {
     return this.franchiseQuery.getById(franchiseId);
+  }
+
+  // Get loyalty rule by franchise
+  public async getLoyaltyRuleByFranchise(franchiseId: string): Promise<ILoyaltyRule> {
+    return this.loyaltyRuleQuery.getRoyaltyRuleByFranchiseId(franchiseId);
   }
 }

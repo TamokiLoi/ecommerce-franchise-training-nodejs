@@ -63,4 +63,14 @@ export class ClientController {
       next(error);
     }
   };
+
+  public getLoyaltyRuleByFranchise = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { franchiseId } = req.params;
+      const item = await this.service.getLoyaltyRuleByFranchise(franchiseId);
+      res.status(HttpStatus.Success).json(formatResponse(item));
+    } catch (error) {
+      next(error);
+    }
+  };
 }

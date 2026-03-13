@@ -1,9 +1,9 @@
-import { Types } from "mongoose";
+import { Document, Types } from "mongoose";
 import { BaseFieldName, BaseLoyaltyTier, IBase } from "../../core";
 
 export interface ILoyaltyRule extends Document, IBase {
   [BaseFieldName.FRANCHISE_ID]: Types.ObjectId;
-  [BaseFieldName.FRANCHISE_NAME]?: Types.ObjectId;
+  [BaseFieldName.FRANCHISE_NAME]?: string;
   [BaseFieldName.EARN_AMOUNT_PER_POINT]: number;
   [BaseFieldName.REDEEM_VALUE_PER_POINT]: number;
   [BaseFieldName.MIN_REDEEM_POINTS]: number;
@@ -23,4 +23,9 @@ export interface IBenefitDetail {
   [BaseFieldName.ORDER_DISCOUNT_PERCENT]: number;
   [BaseFieldName.EARN_MULTIPLIER]: number;
   [BaseFieldName.FREE_SHIPPING]: boolean;
+}
+
+export interface ILoyaltyRuleQuery {
+  getById(id: string): Promise<ILoyaltyRule | null>;
+  getRoyaltyRuleByFranchiseId(franchiseId: string): Promise<ILoyaltyRule>;
 }

@@ -245,7 +245,7 @@ export enum BaseFieldName {
   TIER = "tier",
   MIN_POINTS = "min_points",
   MAX_POINTS = "max_points",
-  BENEFIT = "BENEFIT",
+  BENEFIT = "benefit",
   ORDER_DISCOUNT_PERCENT = "order_discount_percent",
   EARN_MULTIPLIER = "earn_multiplier",
   FREE_SHIPPING = "free_shipping",

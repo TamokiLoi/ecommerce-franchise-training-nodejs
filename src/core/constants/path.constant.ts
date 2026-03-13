@@ -81,6 +81,12 @@ export const API_PATH = {
   CUSTOMER_FRANCHISE_RESTORE: "/api/customer-franchises/:id/restore",
   CUSTOMER_FRANCHISE_CHANGE_STATUS: "/api/customer-franchises/:id/status",
 
+  // loyalty rule
+  LOYALTY_RULE: "/api/loyalty-rules",
+  LOYALTY_RULE_SEARCH: "/api/loyalty-rules/search",
+  LOYALTY_RULE_ID: "/api/loyalty-rules/:id",
+  GET_LOYALTY_RULE_BY_FRANCHISE: "/api/loyalty-rules/franchise/:franchiseId",
+
   // categories
   CATEGORY: "/api/categories",
   CATEGORY_SEARCH: "/api/categories/search",
@@ -179,6 +185,7 @@ export const API_PATH = {
   CLIENT_PRODUCTS: "/api/clients/products",
   CLIENT_PRODUCT_DETAIL: "/api/clients/franchises/:franchiseId/products/:productId",
   CLIENT_FRANCHISE_DETAIL: "/api/clients/franchises/:franchiseId",
+  CLIENT_FRANCHISE_LOYALTY_RULE: "/api/clients/franchises/:franchiseId/loyalty-rule",
 
   // cart, cartItem
   CART: "/api/carts",

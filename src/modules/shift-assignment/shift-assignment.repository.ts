@@ -81,7 +81,7 @@ export class ShiftAssignmentRepository extends BaseRepository<IShiftAssignment> 
         total: result[0]?.total?.[0]?.count ?? 0,
       };
     } catch (error) {
-      throw new HttpException(HttpStatus.BAD_REQUEST, MSG_BUSINESS.DATABASE_QUERY_FAILED);
+      throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.DATABASE_QUERY_FAILED);
     }
   }
 

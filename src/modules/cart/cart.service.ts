@@ -105,7 +105,7 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
      */
     const franchise = await this.franchiseQuery.getById(franchise_id);
     if (!franchise) {
-      throw new HttpException(HttpStatus.BAD_REQUEST, MSG_BUSINESS.ITEM_NOT_FOUND_WITH_NAME("Franchise"));
+      throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.ITEM_NOT_FOUND_WITH_NAME("Franchise"));
     }
 
     /**
@@ -113,7 +113,7 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
      */
     const productFranchise = await this.productFranchiseQuery.getItemActive(product_franchise_id);
     if (!productFranchise || productFranchise.franchise_id.toString() !== franchise_id) {
-      throw new HttpException(HttpStatus.BAD_REQUEST, "Product not available in this franchise");
+      throw new HttpException(HttpStatus.BadRequest, "Product not available in this franchise");
     }
 
     /**
@@ -178,7 +178,7 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
   public async removeCartItem(cartItemId: string, loggedUser: UserAuthPayload | CustomerAuthPayload) {
     const cartItem = await this.cartItemQuery.getById(cartItemId);
 
-    if (!cartItem) throw new HttpException(HttpStatus.BAD_REQUEST, "Cart item not found");
+    if (!cartItem) throw new HttpException(HttpStatus.BadRequest, "Cart item not found");
 
     await this.cartItemService.removeCartItem(cartItemId, loggedUser);
 
@@ -193,7 +193,7 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
   ) {
     const cartItem = await this.cartOptionItemService.updateOptionItem(payload, loggedUser);
 
-    if (!cartItem) throw new HttpException(HttpStatus.BAD_REQUEST, "Cart item not found");
+    if (!cartItem) throw new HttpException(HttpStatus.BadRequest, "Cart item not found");
 
     await this.recalculateCart(cartItem.cart_id);
 
@@ -206,7 +206,7 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
   ) {
     const cartItem = await this.cartOptionItemService.removeOptionItem(payload, loggedUser);
 
-    if (!cartItem) throw new HttpException(HttpStatus.BAD_REQUEST, "Cart item not found");
+    if (!cartItem) throw new HttpException(HttpStatus.BadRequest, "Cart item not found");
 
     await this.recalculateCart(cartItem.cart_id);
 
@@ -278,14 +278,14 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
     // 2: Load voucher
     const voucher = await this.voucherQuery.getActiveVoucherByCode(voucher_code, finalItem.franchise_id);
 
-    if (!voucher) throw new HttpException(HttpStatus.BAD_REQUEST, "Voucher not found");
+    if (!voucher) throw new HttpException(HttpStatus.BadRequest, "Voucher not found");
 
     if (voucher.code === voucher_code) {
-      throw new HttpException(HttpStatus.BAD_REQUEST, "Cart has already applied this voucher");
+      throw new HttpException(HttpStatus.BadRequest, "Cart has already applied this voucher");
     }
 
     if (voucher.quota_used >= voucher.quota_total || voucher.quota_total === 0) {
-      throw new HttpException(HttpStatus.BAD_REQUEST, "Voucher is out of quota, not available!");
+      throw new HttpException(HttpStatus.BadRequest, "Voucher is out of quota, not available!");
     }
 
     // 3: Apply voucher
@@ -317,7 +317,7 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
 
     if (!finalItem.voucher_id) {
       throw new HttpException(
-        HttpStatus.BAD_REQUEST,
+        HttpStatus.BadRequest,
         "Cart does not have voucher applied, or voucher has been removed!",
       );
     }
@@ -378,7 +378,7 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
      */
     const cart = await this.cartRepo.findByIdForUpdate(cartId.toString());
 
-    if (!cart) throw new HttpException(HttpStatus.BAD_REQUEST, "Cart not found");
+    if (!cart) throw new HttpException(HttpStatus.BadRequest, "Cart not found");
 
     /**
      * Update subtotal

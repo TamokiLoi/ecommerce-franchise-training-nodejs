@@ -54,12 +54,12 @@ export class ShiftAssignmentService
 
     const user = await this.userQuery.getUserById(dto.user_id.toString());
     if (!user) {
-      throw new HttpException(HttpStatus.BAD_REQUEST, "User not found");
+      throw new HttpException(HttpStatus.BadRequest, "User not found");
     }
 
     const shift = await this.shiftQuery.getById(dto.shift_id.toString());
     if (!shift) {
-      throw new HttpException(HttpStatus.BAD_REQUEST, "Shift not found");
+      throw new HttpException(HttpStatus.BadRequest, "Shift not found");
     }
     // Get existing assignments of user on the same date
     const existingAssignments = await this.shiftAssignRepo.getAllByUserIdAndDate(dto.user_id.toString(), dto.work_date);
@@ -83,18 +83,18 @@ export class ShiftAssignmentService
       const isOverlap = newStart < assignedEnd && assignedStart < newEnd;
 
       if (isOverlap) {
-        throw new HttpException(HttpStatus.BAD_REQUEST, "User already assigned to another overlapping shift");
+        throw new HttpException(HttpStatus.BadRequest, "User already assigned to another overlapping shift");
       }
     }
 
     const franchiseId = await this.shiftQuery.getFranchiseIdByShiftId(dto.shift_id.toString());
     if (!franchiseId) {
-      throw new HttpException(HttpStatus.BAD_REQUEST, "Franchise not found");
+      throw new HttpException(HttpStatus.BadRequest, "Franchise not found");
     }
     // Check if a shift assignment already exists for the same user on the same work date
     const isExistAssignedUser = await this.shiftAssignRepo.getAllByUserIdAndDate(dto.user_id.toString(), dto.work_date);
     if (isExistAssignedUser.length > 0) {
-      throw new HttpException(HttpStatus.BAD_REQUEST, "Shift assignment already exists for this user on this date");
+      throw new HttpException(HttpStatus.BadRequest, "Shift assignment already exists for this user on this date");
     }
 
     //TODO lay franchise id user co thuoc franchise do khong
@@ -103,7 +103,7 @@ export class ShiftAssignmentService
       dto.user_id.toString(),
     );
     if (!userFranchiseRole) {
-      throw new HttpException(HttpStatus.BAD_REQUEST, "User franchise role not found");
+      throw new HttpException(HttpStatus.BadRequest, "User franchise role not found");
     }
 
     const isExist = await this.repo.existsByFilter({
@@ -124,7 +124,7 @@ export class ShiftAssignmentService
     today.setHours(0, 0, 0, 0); // reset time
 
     if (workDate < today) {
-      throw new HttpException(HttpStatus.BAD_REQUEST, "Cannot assign shift for past dates");
+      throw new HttpException(HttpStatus.BadRequest, "Cannot assign shift for past dates");
     }
 
     if (!user) {
@@ -162,15 +162,15 @@ export class ShiftAssignmentService
     const allowedNextStatuses = [ShiftAssignmentStatus.COMPLETED, ShiftAssignmentStatus.ABSENT];
 
     if (!allowedNextStatuses.includes(payload.status)) {
-      throw new HttpException(HttpStatus.BAD_REQUEST, "Status can only change to COMPLETED or ABSENT");
+      throw new HttpException(HttpStatus.BadRequest, "Status can only change to COMPLETED or ABSENT");
     }
 
     if (current.status !== ShiftAssignmentStatus.ASSIGNED) {
-      throw new HttpException(HttpStatus.BAD_REQUEST, "Status can only be updated from ASSIGNED");
+      throw new HttpException(HttpStatus.BadRequest, "Status can only be updated from ASSIGNED");
     }
 
     if (current.status === payload.status) {
-      throw new HttpException(HttpStatus.BAD_REQUEST, MSG_BUSINESS.STATUS_NO_CHANGE);
+      throw new HttpException(HttpStatus.BadRequest, MSG_BUSINESS.STATUS_NO_CHANGE);
     }
   }
 

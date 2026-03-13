@@ -123,4 +123,37 @@ export class CustomerFranchiseRepository extends BaseRepository<ICustomerFranchi
       },
     ];
   }
+
+  public async getCustomerFranchise(customerId: string, franchiseId: string) {
+    return this.model
+      .findOne({
+        customer_id: customerId,
+        franchise_id: franchiseId,
+      })
+      .lean();
+  }
+
+  public async updatePoints(customerFranchiseId: string, pointChange: number) {
+    return this.model.findByIdAndUpdate(
+      customerFranchiseId,
+      {
+        $inc: {
+          loyalty_points: pointChange,
+        },
+      },
+      { new: true },
+    );
+  }
+
+  public async increaseStats(customerFranchiseId: string, orderAmount: number) {
+    return this.model.findByIdAndUpdate(customerFranchiseId, {
+      $inc: {
+        total_orders: 1,
+        total_spent: orderAmount,
+      },
+      $set: {
+        last_order_date: new Date(),
+      },
+    });
+  }
 }

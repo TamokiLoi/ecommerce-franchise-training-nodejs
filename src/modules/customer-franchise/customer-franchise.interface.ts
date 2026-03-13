@@ -1,12 +1,12 @@
 import { Document, Types } from "mongoose";
-import { BaseFieldName, IBase } from "../../core";
+import { BaseFieldName, BaseLoyaltyTier, IBase } from "../../core";
 import CreateCustomerFranchiseDto from "./dto/create.dto";
 
 export interface ICustomerFranchise extends Document, IBase {
   [BaseFieldName.CUSTOMER_ID]: Types.ObjectId;
   [BaseFieldName.FRANCHISE_ID]: Types.ObjectId;
   [BaseFieldName.LOYALTY_POINTS]: number; // default 0
-  [BaseFieldName.CURRENT_TIER]: string; // BRONZE, SILVER, GOLD, PLATINUM
+  [BaseFieldName.CURRENT_TIER]: BaseLoyaltyTier; // BRONZE, SILVER, GOLD, PLATINUM
   [BaseFieldName.TOTAL_EARNED_POINTS]: number; // default 0
   [BaseFieldName.FIRST_ORDER_DATE]?: Date;
   [BaseFieldName.LAST_ORDER_DATE]?: Date;

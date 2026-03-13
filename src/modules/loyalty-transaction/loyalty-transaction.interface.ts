@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { Document, Types } from "mongoose";
 import { BaseFieldName, IBase, LoyaltyTransactionType } from "../../core";
 
 export interface ILoyaltyTransaction extends Document, IBase {

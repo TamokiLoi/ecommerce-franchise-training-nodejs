@@ -13,7 +13,7 @@ export const mapItemToResponse = (item: ICustomerFranchise): CustomerFranchiseIt
     customer_name: item.customer_name,
     customer_email: item.customer_email,
     loyalty_points: item.loyalty_points,
-    loyalty_tier: item.loyalty_tier,
+    current_tier: item.current_tier,
     total_earned_points: item.total_earned_points,
     first_order_date: item.first_order_date?.toISOString() ?? "",
     last_order_date: item.last_order_date?.toISOString() ?? "",

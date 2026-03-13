@@ -51,6 +51,8 @@ tags:
     description: Customer related endpoints
   - name: Inventory
     description: Inventory related endpoints
+  - name: LoyaltyRule
+    description: LoyaltyRule related endpoints
   - name: Product Category Franchise
     description: Product Category Franchise related endpoints
   - name: Product Franchise
