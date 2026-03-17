@@ -1,31 +1,30 @@
 import { ClientSession, Types } from "mongoose";
 import {
-  BaseCrudService,
-  BaseFieldName,
-  CustomerAuthPayload,
-  HttpException,
-  HttpStatus,
-  LoyaltyTransactionType,
-  MSG_BUSINESS,
-  UserAuthPayload,
-  UserType,
+    BaseCrudService,
+    BaseFieldName,
+    HttpException,
+    HttpStatus,
+    LoyaltyTransactionType,
+    MSG_BUSINESS,
+    OrderCustomerFranchiseType,
+    UserType,
 } from "../../core";
 import { AuditAction, AuditEntityType, IAuditLogger, pickAuditSnapshot } from "../audit-log";
 import { ICustomerQuery } from "../customer";
 import { IFranchiseQuery } from "../franchise";
+import { ILoyaltyRuleQuery } from "../loyalty-rule";
+import { ILoyaltyTransactionLogger } from "../loyalty-transaction";
 import {
-  IAddPointPayload,
-  ICustomerFranchise,
-  ICustomerFranchiseQuery,
-  IRestoreUsedPointsPayload,
-  IRevertPointPayload,
+    IAddPointPayload,
+    ICustomerFranchise,
+    ICustomerFranchiseQuery,
+    IRestoreUsedPointsPayload,
+    IRevertPointPayload,
 } from "./customer-franchise.interface";
 import { CustomerFranchiseRepository } from "./customer-franchise.repository";
 import CreateCustomerFranchiseDto, { ICreateCustomerFranchiseDto } from "./dto/create.dto";
 import { SearchPaginationItemDto } from "./dto/search.dto";
 import UpdateCustomerFranchiseDto from "./dto/update.dto";
-import { ILoyaltyTransactionLogger } from "../loyalty-transaction";
-import { ILoyaltyRuleQuery } from "../loyalty-rule";
 
 export const AUDIT_FIELDS_ITEM = [
   BaseFieldName.FRANCHISE_ID,
@@ -167,6 +166,18 @@ export default class CustomerFranchiseService
       throw new HttpException(HttpStatus.BadRequest, "Add points failed");
     }
 
+    // ⭐ NEW: Update stats
+    await this.updateCustomerStats(
+      {
+        customerId,
+        franchiseId,
+        orderAmount: final_amount,
+        earnedPoints,
+        action: OrderCustomerFranchiseType.ORDER_SUCCESS,
+      },
+      session,
+    );
+
     // 4. Get customer franchise
     const customerFranchise = await this.customerFranchiseRepo.findByCustomerAndFranchise(
       customerId,
@@ -196,7 +207,7 @@ export default class CustomerFranchiseService
   }
 
   public async revertPoints(payload: IRevertPointPayload, session?: ClientSession): Promise<boolean> {
-    const { orderId, customerId, franchiseId, refundReason, loggedUser } = payload;
+    const { orderId, customerId, franchiseId, final_amount, refundReason, loggedUser } = payload;
 
     // 1️⃣ Get loyalty transaction (EARN)
     const earnTransaction = await this.loyaltyTransactionLogger.findEarnByOrderId(String(orderId), session);
@@ -212,10 +223,21 @@ export default class CustomerFranchiseService
 
     // 2️⃣ Revert points
     const revertPoint = await this.customerFranchiseRepo.addPoints(customerId, franchiseId, -earnedPoints, session);
-
     if (!revertPoint) {
       throw new HttpException(HttpStatus.BadRequest, "Revert points failed");
     }
+
+    // ⭐ NEW: Update stats
+    await this.updateCustomerStats(
+      {
+        customerId,
+        franchiseId,
+        orderAmount: final_amount,
+        earnedPoints,
+        action: OrderCustomerFranchiseType.ORDER_CANCEL,
+      },
+      session,
+    );
 
     // 3️⃣ Get customer franchise
     const customerFranchise = await this.customerFranchiseRepo.findByCustomerAndFranchise(
@@ -286,5 +308,67 @@ export default class CustomerFranchiseService
     );
 
     return true;
+  }
+
+  private async updateCustomerStats(
+    payload: {
+      customerId: Types.ObjectId;
+      franchiseId: Types.ObjectId;
+      orderAmount?: number;
+      earnedPoints?: number;
+      action: OrderCustomerFranchiseType;
+    },
+    session?: ClientSession,
+  ): Promise<boolean> {
+    const { customerId, franchiseId, orderAmount = 0, earnedPoints = 0, action } = payload;
+
+    const update: any = {
+      $inc: {},
+    };
+
+    // 🧠 Handle logic theo action
+    if (action === OrderCustomerFranchiseType.ORDER_SUCCESS) {
+      if (orderAmount > 0) {
+        update.$inc[BaseFieldName.TOTAL_SPENT] = orderAmount;
+        update.$inc[BaseFieldName.TOTAL_ORDERS] = 1;
+      }
+
+      if (earnedPoints > 0) {
+        update.$inc[BaseFieldName.TOTAL_EARNED_POINTS] = earnedPoints;
+      }
+
+      // only set if not exists
+      update.$setOnInsert = {
+        [BaseFieldName.FIRST_ORDER_DATE]: new Date(),
+      };
+    }
+
+    if (action === OrderCustomerFranchiseType.ORDER_CANCEL) {
+      if (orderAmount > 0) {
+        update.$inc[BaseFieldName.TOTAL_SPENT] = -orderAmount;
+        update.$inc[BaseFieldName.TOTAL_ORDERS] = -1;
+      }
+
+      if (earnedPoints > 0) {
+        // ⚠️ Confirm business rule (có thể không trừ)
+        update.$inc[BaseFieldName.TOTAL_EARNED_POINTS] = -earnedPoints;
+      }
+    }
+
+    // cleanup empty $inc
+    if (Object.keys(update.$inc).length === 0) {
+      delete update.$inc;
+    }
+
+    const result = await this.customerFranchiseRepo.updateOne(
+      {
+        [BaseFieldName.CUSTOMER_ID]: customerId,
+        [BaseFieldName.FRANCHISE_ID]: franchiseId,
+      },
+      update,
+      session,
+    );
+
+    return !!result;
   }
 }

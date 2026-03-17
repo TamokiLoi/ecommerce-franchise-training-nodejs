@@ -32,6 +32,7 @@ export interface IRevertPointPayload {
   orderId: Types.ObjectId;
   customerId: Types.ObjectId;
   franchiseId: Types.ObjectId;
+  final_amount: number;
   refundReason: string;
   loggedUser: UserAuthPayload | CustomerAuthPayload;
 }

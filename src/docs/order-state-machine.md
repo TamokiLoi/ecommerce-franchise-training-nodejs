@@ -17,7 +17,7 @@ PREPARING
 READY_FOR_PICKUP
 OUT_FOR_DELIVERY
 COMPLETED
-CANCELLED
+CANCELED
 ```
 
 ---
@@ -87,7 +87,7 @@ Actions triggered:
 
 ---
 
-## CANCELLED
+## CANCELED
 
 Order cancelled by customer or staff.
 
@@ -130,7 +130,7 @@ PREPARING
 READY_FOR_PICKUP
         │
         ▼
-     CANCELLED
+     CANCELED
 ```
 
 ---
@@ -158,7 +158,7 @@ Examples of invalid transitions:
 
 ```
 COMPLETED → PREPARING
-CANCELLED → COMPLETED
+CANCELED → COMPLETED
 ```
 
 Order status should only move forward in the workflow.

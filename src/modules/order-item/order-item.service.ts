@@ -19,19 +19,19 @@ export class OrderItemService implements IOrderItemQuery {
     return this.orderItemRepo.create(payload);
   }
 
-public async createOrderItems(
-  payload: ICreateOrderItemDto[],
-  session?: ClientSession,
-): Promise<IOrderItem[]> {
+  public async createOrderItems(payload: ICreateOrderItemDto[], session?: ClientSession): Promise<IOrderItem[]> {
+    if (!payload.length) {
+      throw new Error("Order items cannot be empty");
+    }
 
-  if (!payload.length) {
-    throw new Error("Order items cannot be empty");
+    return this.orderItemRepo.createMany(payload, session);
   }
-
-  return this.orderItemRepo.createMany(payload, session);
-}
 
   public async getById(id: string): Promise<IOrderItem | null> {
     return this.orderItemRepo.findById(id);
+  }
+
+  public async getItemsByOrderId(orderId: string, session?: ClientSession): Promise<IOrderItem[]> {
+    return this.orderItemRepo.getItemsByOrderId(orderId, session);
   }
 }

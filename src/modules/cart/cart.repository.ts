@@ -101,7 +101,20 @@ export class CartRepository extends BaseRepository<ICart> {
     }
   }
 
-  public async getCartsByCustomer(customerId: string, status?: CartStatus) {
+  public async countCartsByCustomer(customerId: string, status?: CartStatus): Promise<number> {
+    const query: Record<string, any> = {
+      customer_id: new Types.ObjectId(customerId),
+      is_deleted: false,
+    };
+
+    if (status) {
+      query.status = status;
+    }
+
+    return this.model.countDocuments(query);
+  }
+
+  public async getCartsByCustomer2(customerId: string, status?: CartStatus) {
     const matchQuery: Record<string, any> = {
       customer_id: new Types.ObjectId(customerId),
       is_deleted: false,
@@ -116,12 +129,8 @@ export class CartRepository extends BaseRepository<ICart> {
     const result = await this.model.aggregate([
       ...this.buildCartBaseAggregate(matchQuery),
 
-      // sort cart mới nhất trước
       { $sort: { updated_at: -1 } },
 
-      /**
-       * Cart Items
-       */
       {
         $lookup: {
           from: "cartitems",
@@ -131,9 +140,6 @@ export class CartRepository extends BaseRepository<ICart> {
         },
       },
 
-      /**
-       * Product franchises
-       */
       {
         $lookup: {
           from: "productfranchises",
@@ -143,9 +149,6 @@ export class CartRepository extends BaseRepository<ICart> {
         },
       },
 
-      /**
-       * Option product franchises
-       */
       {
         $lookup: {
           from: "productfranchises",
@@ -155,9 +158,6 @@ export class CartRepository extends BaseRepository<ICart> {
         },
       },
 
-      /**
-       * Products
-       */
       {
         $lookup: {
           from: "products",
@@ -167,9 +167,6 @@ export class CartRepository extends BaseRepository<ICart> {
         },
       },
 
-      /**
-       * Option products
-       */
       {
         $lookup: {
           from: "products",
@@ -179,9 +176,6 @@ export class CartRepository extends BaseRepository<ICart> {
         },
       },
 
-      /**
-       * Build cart_items giống getCartDetail
-       */
       {
         $addFields: {
           cart_items: {
@@ -198,6 +192,7 @@ export class CartRepository extends BaseRepository<ICart> {
                 options_hash: "$$item.options_hash",
                 note: "$$item.note",
 
+                // ✅ product name
                 product_name: {
                   $arrayElemAt: [
                     {
@@ -235,6 +230,50 @@ export class CartRepository extends BaseRepository<ICart> {
                         },
                         as: "p",
                         in: "$$p.name",
+                      },
+                    },
+                    0,
+                  ],
+                },
+
+                // 🔥 product image
+                product_image_url: {
+                  $arrayElemAt: [
+                    {
+                      $map: {
+                        input: {
+                          $filter: {
+                            input: "$products",
+                            as: "p",
+                            cond: {
+                              $eq: [
+                                "$$p._id",
+                                {
+                                  $arrayElemAt: [
+                                    {
+                                      $map: {
+                                        input: {
+                                          $filter: {
+                                            input: "$product_franchises",
+                                            as: "pf",
+                                            cond: {
+                                              $eq: ["$$pf._id", "$$item.product_franchise_id"],
+                                            },
+                                          },
+                                        },
+                                        as: "pf",
+                                        in: "$$pf.product_id",
+                                      },
+                                    },
+                                    0,
+                                  ],
+                                },
+                              ],
+                            },
+                          },
+                        },
+                        as: "p",
+                        in: "$$p.image_url",
                       },
                     },
                     0,
@@ -294,6 +333,50 @@ export class CartRepository extends BaseRepository<ICart> {
                           0,
                         ],
                       },
+
+                      // 🔥 option image
+                      product_image_url: {
+                        $arrayElemAt: [
+                          {
+                            $map: {
+                              input: {
+                                $filter: {
+                                  input: "$option_products",
+                                  as: "p",
+                                  cond: {
+                                    $eq: [
+                                      "$$p._id",
+                                      {
+                                        $arrayElemAt: [
+                                          {
+                                            $map: {
+                                              input: {
+                                                $filter: {
+                                                  input: "$option_product_franchises",
+                                                  as: "pf",
+                                                  cond: {
+                                                    $eq: ["$$pf._id", "$$opt.product_franchise_id"],
+                                                  },
+                                                },
+                                              },
+                                              as: "pf",
+                                              in: "$$pf.product_id",
+                                            },
+                                          },
+                                          0,
+                                        ],
+                                      },
+                                    ],
+                                  },
+                                },
+                              },
+                              as: "p",
+                              in: "$$p.image_url",
+                            },
+                          },
+                          0,
+                        ],
+                      },
                     },
                   },
                 },
@@ -303,6 +386,241 @@ export class CartRepository extends BaseRepository<ICart> {
         },
       },
 
+      {
+        $project: {
+          _id: 1,
+          customer_id: 1,
+          customer_name: 1,
+          staff_id: 1,
+          staff_name: 1,
+          staff_email: 1,
+          franchise_id: 1,
+          franchise_name: 1,
+          status: 1,
+          address: 1,
+          phone: 1,
+          message: 1,
+          loyalty_points_used: 1,
+          promotion_discount: 1,
+          voucher_discount: 1,
+          loyalty_discount: 1,
+          subtotal_amount: 1,
+          final_amount: 1,
+          promotion_id: 1,
+          promotion_type: 1,
+          promotion_value: 1,
+          voucher_id: 1,
+          voucher_code: 1,
+          voucher_type: 1,
+          voucher_value: 1,
+          cart_items: 1,
+        },
+      },
+    ]);
+
+    return result;
+  }
+
+  public async getCartDetail2(cartId: Types.ObjectId) {
+    const result = await this.model.aggregate([
+      ...this.buildCartBaseAggregate({ _id: cartId }),
+
+      // 1. Cart Items
+      {
+        $lookup: {
+          from: "cartitems",
+          localField: "_id",
+          foreignField: "cart_id",
+          as: "cart_items",
+        },
+      },
+
+      // 2. Product franchises (main)
+      {
+        $lookup: {
+          from: "productfranchises",
+          localField: "cart_items.product_franchise_id",
+          foreignField: "_id",
+          as: "product_franchises",
+        },
+      },
+
+      // 3. Option product franchises
+      {
+        $lookup: {
+          from: "productfranchises",
+          localField: "cart_items.options.product_franchise_id",
+          foreignField: "_id",
+          as: "option_product_franchises",
+        },
+      },
+
+      // 4. Products (main)
+      {
+        $lookup: {
+          from: "products",
+          localField: "product_franchises.product_id",
+          foreignField: "_id",
+          as: "products",
+        },
+      },
+
+      // 5. Products (option)
+      {
+        $lookup: {
+          from: "products",
+          localField: "option_product_franchises.product_id",
+          foreignField: "_id",
+          as: "option_products",
+        },
+      },
+
+      // 🔥 6. Merge product vào product_franchises
+      {
+        $addFields: {
+          product_franchises: {
+            $map: {
+              input: "$product_franchises",
+              as: "pf",
+              in: {
+                $mergeObjects: [
+                  "$$pf",
+                  {
+                    product: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: "$products",
+                            as: "p",
+                            cond: { $eq: ["$$p._id", "$$pf.product_id"] },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+
+          option_product_franchises: {
+            $map: {
+              input: "$option_product_franchises",
+              as: "pf",
+              in: {
+                $mergeObjects: [
+                  "$$pf",
+                  {
+                    product: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: "$option_products",
+                            as: "p",
+                            cond: { $eq: ["$$p._id", "$$pf.product_id"] },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+
+      // 🔥 7. Build cart_items (clean hơn rất nhiều)
+      {
+        $addFields: {
+          cart_items: {
+            $map: {
+              input: "$cart_items",
+              as: "item",
+              in: {
+                cart_item_id: "$$item._id",
+                quantity: "$$item.quantity",
+                product_cart_price: "$$item.product_cart_price",
+                discount_amount: "$$item.discount_amount",
+                line_total: "$$item.line_total",
+                final_line_total: "$$item.final_line_total",
+                options_hash: "$$item.options_hash",
+                note: "$$item.note",
+
+                // 🔥 PRODUCT INFO (clean)
+                product: {
+                  $let: {
+                    vars: {
+                      pf: {
+                        $arrayElemAt: [
+                          {
+                            $filter: {
+                              input: "$product_franchises",
+                              as: "pf",
+                              cond: {
+                                $eq: ["$$pf._id", "$$item.product_franchise_id"],
+                              },
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                    },
+                    in: {
+                      name: "$$pf.product.name",
+                      image_url: "$$pf.product.image_url",
+                    },
+                  },
+                },
+
+                // 🔥 OPTIONS
+                options: {
+                  $map: {
+                    input: "$$item.options",
+                    as: "opt",
+                    in: {
+                      quantity: "$$opt.quantity",
+                      product_franchise_id: "$$opt.product_franchise_id",
+                      price_snapshot: "$$opt.price_snapshot",
+                      discount_amount: "$$opt.discount_amount",
+                      final_price: "$$opt.final_price",
+
+                      product: {
+                        $let: {
+                          vars: {
+                            pf: {
+                              $arrayElemAt: [
+                                {
+                                  $filter: {
+                                    input: "$option_product_franchises",
+                                    as: "pf",
+                                    cond: {
+                                      $eq: ["$$pf._id", "$$opt.product_franchise_id"],
+                                    },
+                                  },
+                                },
+                                0,
+                              ],
+                            },
+                          },
+                          in: {
+                            name: "$$pf.product.name",
+                            image_url: "$$pf.product.image_url",
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+
+      // 8. Final projection
       {
         $project: {
           _id: 1,
@@ -320,12 +638,11 @@ export class CartRepository extends BaseRepository<ICart> {
           status: 1,
           address: 1,
           phone: 1,
-
+          message: 1,
           loyalty_points_used: 1,
           promotion_discount: 1,
           voucher_discount: 1,
           loyalty_discount: 1,
-
           subtotal_amount: 1,
           final_amount: 1,
 
@@ -343,233 +660,96 @@ export class CartRepository extends BaseRepository<ICart> {
       },
     ]);
 
-    return result;
+    return result[0] || null;
   }
 
-  public async countCartsByCustomer(customerId: string, status?: CartStatus): Promise<number> {
-    const query: Record<string, any> = {
+  public async getCartsByCustomer(customerId: string, status?: CartStatus) {
+    const matchQuery: Record<string, any> = {
       customer_id: new Types.ObjectId(customerId),
       is_deleted: false,
     };
 
-    if (status) {
-      query.status = status;
-    }
+    matchQuery.status = status ? status : { $ne: CartStatus.ACTIVE };
 
-    return this.model.countDocuments(query);
-  }
-
-  /**
-   * Get full cart detail with items + options
-   */
-  public async getCartDetail(cartId: Types.ObjectId) {
     const result = await this.model.aggregate([
-      ...this.buildCartBaseAggregate({ _id: cartId }),
+      ...this.buildCartBaseAggregate(matchQuery),
 
-      // Cart Items
-      {
-        $lookup: {
-          from: "cartitems",
-          localField: "_id",
-          foreignField: "cart_id",
-          as: "cart_items",
-        },
-      },
+      { $sort: { updated_at: -1 } },
 
-      // Product franchises
-      {
-        $lookup: {
-          from: "productfranchises",
-          localField: "cart_items.product_franchise_id",
-          foreignField: "_id",
-          as: "product_franchises",
-        },
-      },
+      ...this.buildCartItemLookups(),
 
-      // Option product franchises
-      {
-        $lookup: {
-          from: "productfranchises",
-          localField: "cart_items.options.product_franchise_id",
-          foreignField: "_id",
-          as: "option_product_franchises",
-        },
-      },
-
-      // Products
-      {
-        $lookup: {
-          from: "products",
-          localField: "product_franchises.product_id",
-          foreignField: "_id",
-          as: "products",
-        },
-      },
-
-      // Option products
-      {
-        $lookup: {
-          from: "products",
-          localField: "option_product_franchises.product_id",
-          foreignField: "_id",
-          as: "option_products",
-        },
-      },
-
-      {
-        $addFields: {
-          cart_items: {
-            $map: {
-              input: "$cart_items",
-              as: "item",
-              in: {
-                cart_item_id: "$$item._id",
-                quantity: "$$item.quantity",
-                product_cart_price: "$$item.product_cart_price",
-                discount_amount: "$$item.discount_amount",
-                line_total: "$$item.line_total",
-                final_line_total: "$$item.final_line_total",
-                options_hash: "$$item.options_hash",
-                note: "$$item.note",
-
-                product_name: {
-                  $arrayElemAt: [
-                    {
-                      $map: {
-                        input: {
-                          $filter: {
-                            input: "$products",
-                            as: "p",
-                            cond: {
-                              $eq: [
-                                "$$p._id",
-                                {
-                                  $arrayElemAt: [
-                                    {
-                                      $map: {
-                                        input: {
-                                          $filter: {
-                                            input: "$product_franchises",
-                                            as: "pf",
-                                            cond: {
-                                              $eq: ["$$pf._id", "$$item.product_franchise_id"],
-                                            },
-                                          },
-                                        },
-                                        as: "pf",
-                                        in: "$$pf.product_id",
-                                      },
-                                    },
-                                    0,
-                                  ],
-                                },
-                              ],
-                            },
-                          },
-                        },
-                        as: "p",
-                        in: "$$p.name",
-                      },
-                    },
-                    0,
-                  ],
-                },
-
-                options: {
-                  $map: {
-                    input: "$$item.options",
-                    as: "opt",
-                    in: {
-                      quantity: "$$opt.quantity",
-                      product_franchise_id: "$$opt.product_franchise_id",
-                      price_snapshot: "$$opt.price_snapshot",
-                      discount_amount: "$$opt.discount_amount",
-                      final_price: "$$opt.final_price",
-
-                      product_name: {
-                        $arrayElemAt: [
-                          {
-                            $map: {
-                              input: {
-                                $filter: {
-                                  input: "$option_products",
-                                  as: "p",
-                                  cond: {
-                                    $eq: [
-                                      "$$p._id",
-                                      {
-                                        $arrayElemAt: [
-                                          {
-                                            $map: {
-                                              input: {
-                                                $filter: {
-                                                  input: "$option_product_franchises",
-                                                  as: "pf",
-                                                  cond: {
-                                                    $eq: ["$$pf._id", "$$opt.product_franchise_id"],
-                                                  },
-                                                },
-                                              },
-                                              as: "pf",
-                                              in: "$$pf.product_id",
-                                            },
-                                          },
-                                          0,
-                                        ],
-                                      },
-                                    ],
-                                  },
-                                },
-                              },
-                              as: "p",
-                              in: "$$p.name",
-                            },
-                          },
-                          0,
-                        ],
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      ...this.buildCartItemsProjection("flat"),
 
       {
         $project: {
           _id: 1,
-
           customer_id: 1,
           customer_name: 1,
-
           staff_id: 1,
           staff_name: 1,
           staff_email: 1,
-
           franchise_id: 1,
           franchise_name: 1,
-
           status: 1,
           address: 1,
           phone: 1,
+          message: 1,
           loyalty_points_used: 1,
           promotion_discount: 1,
           voucher_discount: 1,
           loyalty_discount: 1,
           subtotal_amount: 1,
           final_amount: 1,
-
           promotion_id: 1,
           promotion_type: 1,
           promotion_value: 1,
-
           voucher_id: 1,
           voucher_code: 1,
           voucher_type: 1,
           voucher_value: 1,
+          cart_items: 1,
+        },
+      },
+    ]);
 
+    return result;
+  }
+
+  public async getCartDetail(cartId: Types.ObjectId) {
+    const result = await this.model.aggregate([
+      ...this.buildCartBaseAggregate({ _id: cartId }),
+
+      ...this.buildCartItemLookups(),
+
+      ...this.buildCartItemsProjection("nested"),
+
+      {
+        $project: {
+          _id: 1,
+          customer_id: 1,
+          customer_name: 1,
+          staff_id: 1,
+          staff_name: 1,
+          staff_email: 1,
+          franchise_id: 1,
+          franchise_name: 1,
+          status: 1,
+          address: 1,
+          phone: 1,
+          message: 1,
+          loyalty_points_used: 1,
+          promotion_discount: 1,
+          voucher_discount: 1,
+          loyalty_discount: 1,
+          subtotal_amount: 1,
+          final_amount: 1,
+          promotion_id: 1,
+          promotion_type: 1,
+          promotion_value: 1,
+          voucher_id: 1,
+          voucher_code: 1,
+          voucher_type: 1,
+          voucher_value: 1,
           cart_items: 1,
         },
       },
@@ -635,6 +815,10 @@ export class CartRepository extends BaseRepository<ICart> {
           staff_name: "$staff.name",
           staff_email: "$staff.email",
           voucher_code: "$voucher.code",
+
+          phone: "$phone",
+          address: "$address",
+          message: "$message",
         },
       },
 
@@ -649,6 +833,294 @@ export class CartRepository extends BaseRepository<ICart> {
     ];
   }
 
+  private buildCartItemLookups() {
+    return [
+      {
+        $lookup: {
+          from: "cartitems",
+          localField: "_id",
+          foreignField: "cart_id",
+          as: "cart_items",
+        },
+      },
+      {
+        $lookup: {
+          from: "productfranchises",
+          localField: "cart_items.product_franchise_id",
+          foreignField: "_id",
+          as: "product_franchises",
+        },
+      },
+      {
+        $lookup: {
+          from: "productfranchises",
+          localField: "cart_items.options.product_franchise_id",
+          foreignField: "_id",
+          as: "option_product_franchises",
+        },
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "product_franchises.product_id",
+          foreignField: "_id",
+          as: "products",
+        },
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "option_product_franchises.product_id",
+          foreignField: "_id",
+          as: "option_products",
+        },
+      },
+
+      // 🔥 merge product vào pf (core improvement)
+      {
+        $addFields: {
+          product_franchises: {
+            $map: {
+              input: "$product_franchises",
+              as: "pf",
+              in: {
+                $mergeObjects: [
+                  "$$pf",
+                  {
+                    product: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: "$products",
+                            as: "p",
+                            cond: { $eq: ["$$p._id", "$$pf.product_id"] },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+          option_product_franchises: {
+            $map: {
+              input: "$option_product_franchises",
+              as: "pf",
+              in: {
+                $mergeObjects: [
+                  "$$pf",
+                  {
+                    product: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: "$option_products",
+                            as: "p",
+                            cond: { $eq: ["$$p._id", "$$pf.product_id"] },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    ];
+  }
+
+  private buildCartItemsProjection(type: "flat" | "nested") {
+    const isFlat = type === "flat";
+
+    return [
+      {
+        $addFields: {
+          cart_items: {
+            $map: {
+              input: "$cart_items",
+              as: "item",
+              in: {
+                cart_item_id: "$$item._id",
+                quantity: "$$item.quantity",
+                product_cart_price: "$$item.product_cart_price",
+                discount_amount: "$$item.discount_amount",
+                line_total: "$$item.line_total",
+                final_line_total: "$$item.final_line_total",
+                options_hash: "$$item.options_hash",
+                note: "$$item.note",
+
+                // 🔥 PRODUCT
+                ...(isFlat
+                  ? {
+                      product_name: {
+                        $let: {
+                          vars: {
+                            pf: {
+                              $arrayElemAt: [
+                                {
+                                  $filter: {
+                                    input: "$product_franchises",
+                                    as: "pf",
+                                    cond: {
+                                      $eq: ["$$pf._id", "$$item.product_franchise_id"],
+                                    },
+                                  },
+                                },
+                                0,
+                              ],
+                            },
+                          },
+                          in: "$$pf.product.name",
+                        },
+                      },
+                      product_image_url: {
+                        $let: {
+                          vars: {
+                            pf: {
+                              $arrayElemAt: [
+                                {
+                                  $filter: {
+                                    input: "$product_franchises",
+                                    as: "pf",
+                                    cond: {
+                                      $eq: ["$$pf._id", "$$item.product_franchise_id"],
+                                    },
+                                  },
+                                },
+                                0,
+                              ],
+                            },
+                          },
+                          in: "$$pf.product.image_url",
+                        },
+                      },
+                    }
+                  : {
+                      product: {
+                        $let: {
+                          vars: {
+                            pf: {
+                              $arrayElemAt: [
+                                {
+                                  $filter: {
+                                    input: "$product_franchises",
+                                    as: "pf",
+                                    cond: {
+                                      $eq: ["$$pf._id", "$$item.product_franchise_id"],
+                                    },
+                                  },
+                                },
+                                0,
+                              ],
+                            },
+                          },
+                          in: {
+                            name: "$$pf.product.name",
+                            image_url: "$$pf.product.image_url",
+                          },
+                        },
+                      },
+                    }),
+
+                // 🔥 OPTIONS
+                options: {
+                  $map: {
+                    input: "$$item.options",
+                    as: "opt",
+                    in: {
+                      quantity: "$$opt.quantity",
+                      product_franchise_id: "$$opt.product_franchise_id",
+                      price_snapshot: "$$opt.price_snapshot",
+                      discount_amount: "$$opt.discount_amount",
+                      final_price: "$$opt.final_price",
+
+                      ...(isFlat
+                        ? {
+                            product_name: {
+                              $let: {
+                                vars: {
+                                  pf: {
+                                    $arrayElemAt: [
+                                      {
+                                        $filter: {
+                                          input: "$option_product_franchises",
+                                          as: "pf",
+                                          cond: {
+                                            $eq: ["$$pf._id", "$$opt.product_franchise_id"],
+                                          },
+                                        },
+                                      },
+                                      0,
+                                    ],
+                                  },
+                                },
+                                in: "$$pf.product.name",
+                              },
+                            },
+                            product_image_url: {
+                              $let: {
+                                vars: {
+                                  pf: {
+                                    $arrayElemAt: [
+                                      {
+                                        $filter: {
+                                          input: "$option_product_franchises",
+                                          as: "pf",
+                                          cond: {
+                                            $eq: ["$$pf._id", "$$opt.product_franchise_id"],
+                                          },
+                                        },
+                                      },
+                                      0,
+                                    ],
+                                  },
+                                },
+                                in: "$$pf.product.image_url",
+                              },
+                            },
+                          }
+                        : {
+                            product: {
+                              $let: {
+                                vars: {
+                                  pf: {
+                                    $arrayElemAt: [
+                                      {
+                                        $filter: {
+                                          input: "$option_product_franchises",
+                                          as: "pf",
+                                          cond: {
+                                            $eq: ["$$pf._id", "$$opt.product_franchise_id"],
+                                          },
+                                        },
+                                      },
+                                      0,
+                                    ],
+                                  },
+                                },
+                                in: {
+                                  name: "$$pf.product.name",
+                                  image_url: "$$pf.product.image_url",
+                                },
+                              },
+                            },
+                          }),
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    ];
+  }
+
   /**
    * Get active cart by customer + franchise
    */
@@ -658,7 +1130,6 @@ export class CartRepository extends BaseRepository<ICart> {
         customer_id: new Types.ObjectId(customerId),
         franchise_id: new Types.ObjectId(franchiseId),
         status: CartStatus.ACTIVE,
-        is_deleted: false,
       })
       .lean()
       .exec();

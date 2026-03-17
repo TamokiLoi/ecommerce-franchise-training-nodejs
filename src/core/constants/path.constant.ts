@@ -220,6 +220,7 @@ export const API_PATH = {
   GET_ORDER_BY_CART: "/api/orders/cart/:cartId",
   GET_ORDERS_BY_CUSTOMER: "/api/orders/customer/:customerId",
   GET_ORDERS_BY_FRANCHISE: "/api/orders/franchise/:franchiseId",
+  PREPARING_ORDER: "/api/orders/:id/preparing",
 
   // order status logs
   ORDER_STATUS_LOG: "/api/order-status-logs",

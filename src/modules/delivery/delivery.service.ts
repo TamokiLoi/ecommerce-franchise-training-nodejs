@@ -1,5 +1,6 @@
+import { ClientSession } from "mongoose";
 import { IAuditLogger } from "../audit-log";
-import { IDelivery, IDeliveryQuery } from "./delivery.interface";
+import { IAddDeliveryPayload, IDelivery, IDeliveryQuery } from "./delivery.interface";
 import { DeliveryRepository } from "./delivery.repository";
 
 export class DeliveryService implements IDeliveryQuery {
@@ -14,5 +15,9 @@ export class DeliveryService implements IDeliveryQuery {
 
   public async getById(id: string): Promise<IDelivery | null> {
     return this.deliveryRepository.findById(id);
+  }
+
+  public async createDelivery(payload: IAddDeliveryPayload, session?: ClientSession): Promise<IDelivery> {
+    return this.deliveryRepository.create(payload, session);
   }
 }

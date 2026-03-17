@@ -32,5 +32,11 @@ export default class OrderRoute implements IRoute {
 
     // GET domain:/api/orders/franchise/:franchiseId - Get order by franchise
     this.router.get(API_PATH.GET_ORDERS_BY_FRANCHISE, adminAuthMiddleware(), this.controller.getOrdersForStaff);
+
+    // GET domain:/api/orders/:id/preparing - Start preparing order 
+    this.router.get(API_PATH.PREPARING_ORDER, adminAuthMiddleware(), this.controller.markPreparingOrder);
+    
+    // GET domain:/api/orders/:id/preparing - Start preparing order 
+    this.router.get(API_PATH.PREPARING_ORDER, adminAuthMiddleware(), this.controller.markPreparingOrder);
   }
 }

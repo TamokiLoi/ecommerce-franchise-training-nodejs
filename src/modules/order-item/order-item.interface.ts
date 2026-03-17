@@ -19,4 +19,5 @@ export interface IOrderItemQuery {
   createOderItem(payload: ICreateOrderItemDto): Promise<IOrderItem>;
   createOrderItems(payload: ICreateOrderItemDto[], session?: ClientSession): Promise<IOrderItem[]>;
   getById(id: string): Promise<IOrderItem | null>;
+  getItemsByOrderId(orderId: string, session?: ClientSession): Promise<IOrderItem[]>;
 }

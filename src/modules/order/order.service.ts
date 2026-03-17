@@ -2,6 +2,7 @@ import mongoose, { ClientSession, Types } from "mongoose";
 import {
   BaseFieldName,
   CustomerAuthPayload,
+  DeliveryStatus,
   genOrderCode,
   HttpException,
   HttpStatus,
@@ -10,26 +11,29 @@ import {
   UserAuthPayload,
   UserType,
 } from "../../core";
-import { IAuditLogger } from "../audit-log";
+import { AuditAction, AuditEntityType, IAuditLogger } from "../audit-log";
 import { ICart } from "../cart";
 import { ICustomerFranchiseQuery } from "../customer-franchise";
+import { IInventoryQuery } from "../inventory";
 import { IOrderItemQuery } from "../order-item";
 import { IOrderStatusLogger } from "../order-status-log";
-import { IPaymentQuery } from "../payment";
 import { IOrder, IOrderQuery } from "./order.interface";
 import { OrderRepository } from "./order.repository";
+import { IDeliveryQuery } from "../delivery";
 
 export class OrderService implements IOrderQuery {
-  private readonly orderRepository: OrderRepository;
+  private readonly orderRepo: OrderRepository;
 
   constructor(
     repo: OrderRepository,
     private readonly auditLogger: IAuditLogger,
     private readonly orderStatusLogger: IOrderStatusLogger,
     private readonly orderItemQuery: IOrderItemQuery,
+    private readonly inventoryQuery: IInventoryQuery,
+    private readonly deliveryQuery: IDeliveryQuery,
     private readonly customerFranchiseQuery: ICustomerFranchiseQuery,
   ) {
-    this.orderRepository = repo;
+    this.orderRepo = repo;
   }
 
   public async createOrder(
@@ -59,12 +63,12 @@ export class OrderService implements IOrderQuery {
 
     // 2: Check unique code
     let code = genOrderCode();
-    while (await this.orderRepository.existsByField(BaseFieldName.CODE, code)) {
+    while (await this.orderRepo.existsByField(BaseFieldName.CODE, code)) {
       code = genOrderCode();
     }
 
     // 3: Create order
-    const order = await this.orderRepository.create(
+    const order = await this.orderRepo.create(
       {
         cart_id: cart._id,
         customer_id: cart.customer_id,
@@ -132,7 +136,7 @@ export class OrderService implements IOrderQuery {
   }
 
   public async getOrderDetail(orderId: string) {
-    const item = await this.orderRepository.getOrderDetail(new Types.ObjectId(orderId));
+    const item = await this.orderRepo.getOrderDetail(new Types.ObjectId(orderId));
 
     if (!item) {
       throw new HttpException(HttpStatus.BadRequest, "Order not found");
@@ -142,7 +146,7 @@ export class OrderService implements IOrderQuery {
   }
 
   public async getOrderDetailByCode(orderCode: string) {
-    const item = await this.orderRepository.getOrderDetailByCode(orderCode);
+    const item = await this.orderRepo.getOrderDetailByCode(orderCode);
 
     if (!item) {
       throw new HttpException(HttpStatus.BadRequest, "Order not found");
@@ -152,7 +156,7 @@ export class OrderService implements IOrderQuery {
   }
 
   public async getOrderByCartId(cartId: string) {
-    const item = await this.orderRepository.findByCartId(new Types.ObjectId(cartId));
+    const item = await this.orderRepo.findByCartId(new Types.ObjectId(cartId));
 
     if (!item) {
       throw new HttpException(HttpStatus.BadRequest, "Order not found");
@@ -162,20 +166,20 @@ export class OrderService implements IOrderQuery {
   }
 
   public async getOrdersByCustomerId(customerId: string, status?: OrderStatus) {
-    return this.orderRepository.getOrdersByCustomerId(customerId, status);
+    return this.orderRepo.getOrdersByCustomerId(customerId, status);
   }
 
   public async getOrdersForStaff(franchiseId: string, status?: OrderStatus) {
-    return this.orderRepository.getOrdersForStaff(franchiseId, status);
+    return this.orderRepo.getOrdersForStaff(franchiseId, status);
   }
 
   // External dependencies
   public async getById(id: string): Promise<IOrder | null> {
-    return this.orderRepository.findById(id);
+    return this.orderRepo.findById(id);
   }
 
   public async getByIdWithSession(id: string, session: ClientSession): Promise<IOrder | null> {
-    return this.orderRepository.findByIdWithSession(id, session);
+    return this.orderRepo.findByIdWithSession(id, session);
   }
 
   public async confirmOrder(
@@ -183,7 +187,7 @@ export class OrderService implements IOrderQuery {
     loggedUser: UserAuthPayload | CustomerAuthPayload,
     session?: ClientSession,
   ): Promise<boolean> {
-    const order = await this.orderRepository.findByIdWithSession(String(id), session ?? undefined);
+    const order = await this.orderRepo.findByIdWithSession(String(id), session ?? undefined);
 
     if (!order) {
       throw new HttpException(HttpStatus.BadRequest, "Order not found");
@@ -193,7 +197,7 @@ export class OrderService implements IOrderQuery {
       throw new HttpException(HttpStatus.BadRequest, "Order cannot be confirmed");
     }
 
-    const updateOrder = await this.orderRepository.confirmOrder(id, session);
+    const updateOrder = await this.orderRepo.confirmOrder(id, session);
     if (!updateOrder) {
       throw new HttpException(HttpStatus.BadRequest, "Confirm order failed");
     }
@@ -218,7 +222,7 @@ export class OrderService implements IOrderQuery {
     loggedUser: UserAuthPayload | CustomerAuthPayload,
     session?: ClientSession,
   ): Promise<boolean> {
-    const order = await this.orderRepository.findByIdWithSession(String(id), session);
+    const order = await this.orderRepo.findByIdWithSession(String(id), session);
 
     if (!order) {
       throw new HttpException(HttpStatus.BadRequest, "Order not found");
@@ -228,7 +232,7 @@ export class OrderService implements IOrderQuery {
       throw new HttpException(HttpStatus.BadRequest, "Order cannot be canceled");
     }
 
-    const updateOrder = await this.orderRepository.cancelOrder(id, failed_reason, session);
+    const updateOrder = await this.orderRepo.cancelOrder(id, failed_reason, session);
     if (!updateOrder) {
       throw new HttpException(HttpStatus.BadRequest, "Cancel order failed");
     }
@@ -237,7 +241,7 @@ export class OrderService implements IOrderQuery {
       {
         order_id: order._id,
         old_status: OrderStatus.CONFIRMED,
-        new_status: OrderStatus.CANCELLED,
+        new_status: OrderStatus.CANCELED,
         changed_by_customer: loggedUser.type === UserType.CUSTOMER ? new Types.ObjectId(loggedUser.id) : undefined,
         changed_by_staff: loggedUser.type === UserType.USER ? new Types.ObjectId(loggedUser.id) : undefined,
       },
@@ -245,5 +249,143 @@ export class OrderService implements IOrderQuery {
     );
 
     return true;
+  }
+
+  public async markPreparingOrder(id: string, loggedUser: UserAuthPayload): Promise<boolean> {
+    const session = await mongoose.startSession();
+
+    try {
+      session.startTransaction();
+
+      // 1. Get order
+      const order = await this.orderRepo.findByIdWithSession(id, session);
+
+      if (!order) {
+        throw new HttpException(HttpStatus.BadRequest, "Order not found");
+      }
+
+      if (order.status !== OrderStatus.CONFIRMED) {
+        throw new HttpException(HttpStatus.BadRequest, `Invalid status transition. Current status: ${order.status}`);
+      }
+
+      // 2. Get order items
+      const orderItems = await this.orderItemQuery.getItemsByOrderId(id, session);
+
+      if (!orderItems || orderItems.length === 0) {
+        throw new HttpException(HttpStatus.BadRequest, "Order items not found");
+      }
+
+      // 3. Deduct inventory
+      for (const item of orderItems) {
+        const ok = await this.inventoryQuery.deductProduct(String(item.product_franchise_id), item.quantity, session);
+
+        if (!ok) {
+          throw new HttpException(HttpStatus.BadRequest, "Not enough product stock");
+        }
+
+        for (const option of item.options || []) {
+          const okOption = await this.inventoryQuery.deductProduct(
+            String(option.product_franchise_id),
+            option.quantity,
+            session,
+          );
+
+          if (!okOption) {
+            throw new HttpException(HttpStatus.BadRequest, "Not enough option stock");
+          }
+        }
+      }
+
+      // 4. Update status (atomic)
+      const updated = await this.orderRepo.updateStatusOrder(id, OrderStatus.CONFIRMED, OrderStatus.PREPARING, session);
+
+      if (!updated) {
+        throw new HttpException(HttpStatus.BadRequest, "Update status failed");
+      }
+
+      await session.commitTransaction();
+
+      // 5. Audit log
+      await this.auditLogger.log({
+        entityType: AuditEntityType.ORDER,
+        entityId: id,
+        action: AuditAction.ORDER_PREPARING,
+        oldData: { status: OrderStatus.CONFIRMED },
+        newData: { status: OrderStatus.PREPARING },
+        changedBy: loggedUser.id,
+      });
+      return true;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+
+  public async markReadyForPickupOrder(
+    id: string,
+    assignedTo: string, // shipper
+    loggedUser: UserAuthPayload,
+  ): Promise<boolean> {
+    const session = await mongoose.startSession();
+
+    try {
+      session.startTransaction();
+
+      // 1. Get order
+      const order = await this.orderRepo.findByIdWithSession(id, session);
+
+      if (!order) {
+        throw new HttpException(HttpStatus.BadRequest, "Order not found");
+      }
+
+      if (order.status !== OrderStatus.PREPARING) {
+        throw new HttpException(HttpStatus.BadRequest, `Invalid status transition. Current status: ${order.status}`);
+      }
+
+      // 2. Update order → READY_FOR_PICKUP (atomic)
+      const updated = await this.orderRepo.updateStatusOrder(
+        id,
+        OrderStatus.PREPARING,
+        OrderStatus.READY_FOR_PICKUP,
+        session,
+      );
+
+      if (!updated) {
+        throw new HttpException(HttpStatus.BadRequest, "Update status failed");
+      }
+
+      // 3. Create delivery
+      await this.deliveryQuery.createDelivery(
+        {
+          order_id: order._id,
+          customer_id: order.customer_id,
+          assigned_by: new Types.ObjectId(loggedUser.id),
+          assigned_to: new Types.ObjectId(assignedTo),
+          status: DeliveryStatus.ASSIGNED,
+          assigned_at: new Date(),
+        },
+        session,
+      );
+
+      await session.commitTransaction();
+
+      // 4. Audit log
+      await this.auditLogger.log({
+        entityType: AuditEntityType.ORDER,
+        entityId: id,
+        action: AuditAction.ORDER_READY_FOR_PICKUP,
+        oldData: { status: OrderStatus.PREPARING },
+        newData: { status: OrderStatus.READY_FOR_PICKUP },
+        changedBy: loggedUser.id,
+      });
+      return true;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
   }
 }

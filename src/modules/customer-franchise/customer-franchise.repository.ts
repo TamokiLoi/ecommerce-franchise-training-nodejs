@@ -190,4 +190,17 @@ export class CustomerFranchiseRepository extends BaseRepository<ICustomerFranchi
 
     return result.modifiedCount > 0;
   }
+
+  public async updateOne(
+    filter: Record<string, any>,
+    update: Record<string, any>,
+    session?: ClientSession,
+  ): Promise<boolean> {
+    const result = await this.model.updateOne(filter, update, {
+      session,
+      upsert: true,
+    });
+
+    return result.acknowledged === true;
+  }
 }

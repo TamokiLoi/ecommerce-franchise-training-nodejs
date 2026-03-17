@@ -243,6 +243,7 @@ export class PaymentService implements IPaymentQuery {
           orderId: order._id,
           customerId: order.customer_id,
           franchiseId: order.franchise_id,
+          final_amount: order.final_amount,
           refundReason: refund_reason,
           loggedUser,
         },

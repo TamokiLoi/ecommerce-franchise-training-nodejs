@@ -259,4 +259,8 @@ export class InventoryService
   ): Promise<IInventory[]> {
     return this.inventoryRepository.getByProductFranchiseIds(productFranchiseIds, session);
   }
+
+  public async deductProduct(productFranchiseId: string, quantity: number, session?: ClientSession) {
+    return this.inventoryRepository.deductProduct(productFranchiseId, quantity, session);
+  }
 }

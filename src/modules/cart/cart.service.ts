@@ -8,7 +8,6 @@ import {
   HttpException,
   HttpStatus,
   MSG_BUSINESS,
-  OrderType,
   UserAuthPayload,
 } from "../../core";
 import { AuditAction, AuditEntityType, IAuditLogger } from "../audit-log";
@@ -104,8 +103,18 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
      */
     this.cartHelper.resolveCustomerAndStaff(payload, loggedUser);
 
-    const { staff_id, franchise_id, customer_id, product_franchise_id, quantity, options, address, phone, note } =
-      payload;
+    const {
+      staff_id,
+      franchise_id,
+      customer_id,
+      product_franchise_id,
+      quantity,
+      options,
+      address,
+      phone,
+      note,
+      message,
+    } = payload;
 
     /**
      * STEP 1 — Validate franchise
@@ -136,7 +145,7 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
     /**
      * STEP 5 — Get or create ACTIVE cart
      */
-    const cart = await this.getOrCreateActiveCart(customer_id, franchise_id, address, phone, staff_id);
+    const cart = await this.getOrCreateActiveCart(customer_id, franchise_id, address, phone, message, staff_id);
 
     /**
      * STEP 6 — Check existing cart item
@@ -182,16 +191,45 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
     return this.cartRepo.getCartDetail(cart._id);
   }
 
+  //   public async removeCartItem(cartItemId: string, loggedUser: UserAuthPayload | CustomerAuthPayload) {
+  //     const cartItem = await this.cartItemQuery.getById(cartItemId);
+
+  //     if (!cartItem) throw new HttpException(HttpStatus.BadRequest, "Cart item not found");
+
+  //     await this.cartItemService.removeCartItem(cartItemId, loggedUser);
+
+  //     await this.recalculateCart(cartItem.cart_id);
+
+  //     return this.cartRepo.getCartDetail(cartItem.cart_id);
+  //   }
+
   public async removeCartItem(cartItemId: string, loggedUser: UserAuthPayload | CustomerAuthPayload) {
     const cartItem = await this.cartItemQuery.getById(cartItemId);
 
-    if (!cartItem) throw new HttpException(HttpStatus.BadRequest, "Cart item not found");
+    if (!cartItem) {
+      throw new HttpException(HttpStatus.BadRequest, "Cart item not found");
+    }
 
+    const cartId = cartItem.cart_id;
+
+    // 1. remove item
     await this.cartItemService.removeCartItem(cartItemId, loggedUser);
 
-    await this.recalculateCart(cartItem.cart_id);
+    // 2. check remaining items
+    const remainingItems = await this.cartItemQuery.countItemsByCartId(cartId);
 
-    return this.cartRepo.getCartDetail(cartItem.cart_id);
+    if (remainingItems === 0) {
+      // 🔥 update cart status
+      await this.cartRepo.updateStatus(String(cartId), CartStatus.CANCELED);
+
+      // ⚠️ optional: return luôn hoặc vẫn return detail
+      return this.cartRepo.getCartDetail(cartId);
+    }
+
+    // 3. recalculate nếu vẫn còn item
+    await this.recalculateCart(cartId);
+
+    return this.cartRepo.getCartDetail(cartId);
   }
 
   public async updateOptionItem(
@@ -252,6 +290,7 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
     franchiseId: string,
     address?: string,
     phone?: string,
+    message?: string,
     staff_id?: string,
   ) {
     let cart = await this.cartRepo.getCartStatusActive(customerId, franchiseId);
@@ -266,6 +305,7 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
       status: CartStatus.ACTIVE,
       address,
       phone,
+      message,
       staff_id: staff_id ? new Types.ObjectId(staff_id) : undefined,
     });
   }

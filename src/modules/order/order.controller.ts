@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
-import { formatResponse, HttpStatus, OrderStatus } from "../../core";
+import { AuthenticatedUserRequest, formatResponse, HttpStatus, OrderStatus } from "../../core";
+import { AssignShipperDto } from "./dto/assign.dto";
 import { IOrder } from "./order.interface";
 import { OrderService } from "./order.service";
 
@@ -53,6 +54,27 @@ export class OrderController {
       const { status } = req.query;
       const items = await this.service.getOrdersForStaff(franchiseId, status as OrderStatus);
       res.status(HttpStatus.Success).json(formatResponse(items));
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public markPreparingOrder = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      await this.service.markPreparingOrder(id, (req as AuthenticatedUserRequest).user);
+      res.status(HttpStatus.Success).json(formatResponse(null));
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public markReadyForPickupOrder = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const payload: AssignShipperDto = req.body;
+      await this.service.markReadyForPickupOrder(id, payload.staff_id, (req as AuthenticatedUserRequest).user);
+      res.status(HttpStatus.Success).json(formatResponse(null));
     } catch (error) {
       next(error);
     }

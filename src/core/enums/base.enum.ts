@@ -64,7 +64,7 @@ export enum OrderStatus {
   READY_FOR_PICKUP = "READY_FOR_PICKUP",
   OUT_FOR_DELIVERY = "OUT_FOR_DELIVERY",
   COMPLETED = "COMPLETED",
-  CANCELLED = "CANCELLED",
+  CANCELED = "CANCELED",
 }
 
 export enum PaymentStatus {
@@ -88,6 +88,11 @@ export enum RefundStatus {
   APPROVED = "APPROVED",
   REJECTED = "REJECTED",
   COMPLETED = "COMPLETED",
+}
+
+export enum OrderCustomerFranchiseType {
+    ORDER_SUCCESS = "ORDER_SUCCESS",
+    ORDER_CANCEL = "ORDER_CANCEL",
 }
 
 export enum DeliveryStatus {

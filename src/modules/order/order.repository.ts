@@ -47,228 +47,46 @@ export class OrderRepository extends BaseRepository<IOrder> {
 
   public async getOrderDetail(orderId: Types.ObjectId) {
     const result = await this.model.aggregate([
+      // 1. base info (customer, staff, franchise...)
       ...this.buildOrderBaseAggregate({ _id: orderId }),
 
-      /**
-       * Order Items
-       */
-      {
-        $lookup: {
-          from: "orderitems",
-          localField: "_id",
-          foreignField: "order_id",
-          as: "order_items",
-        },
-      },
+      // 2. 🔥 thay vì viết lại 5 cái lookup
+      ...this.buildOrderItemLookups(),
 
-      /**
-       * Product franchises
-       */
-      {
-        $lookup: {
-          from: "productfranchises",
-          localField: "order_items.product_franchise_id",
-          foreignField: "_id",
-          as: "product_franchises",
-        },
-      },
+      // 3. 🔥 thay vì viết lại $addFields dài
+      ...this.buildOrderItemsProjection({
+        includeProductInfo: true,
+      }),
 
-      /**
-       * Option product franchises
-       */
-      {
-        $lookup: {
-          from: "productfranchises",
-          localField: "order_items.options.product_franchise_id",
-          foreignField: "_id",
-          as: "option_product_franchises",
-        },
-      },
-
-      /**
-       * Products
-       */
-      {
-        $lookup: {
-          from: "products",
-          localField: "product_franchises.product_id",
-          foreignField: "_id",
-          as: "products",
-        },
-      },
-
-      /**
-       * Option products
-       */
-      {
-        $lookup: {
-          from: "products",
-          localField: "option_product_franchises.product_id",
-          foreignField: "_id",
-          as: "option_products",
-        },
-      },
-
-      /**
-       * Build order_items
-       */
-      {
-        $addFields: {
-          order_items: {
-            $map: {
-              input: "$order_items",
-              as: "item",
-              in: {
-                order_item_id: "$$item._id",
-                quantity: "$$item.quantity",
-                price_snapshot: "$$item.price_snapshot",
-                discount_amount: "$$item.discount_amount",
-                line_total: "$$item.line_total",
-                final_line_total: "$$item.final_line_total",
-                options_hash: "$$item.options_hash",
-                note: "$$item.note",
-
-                product_name: {
-                  $arrayElemAt: [
-                    {
-                      $map: {
-                        input: {
-                          $filter: {
-                            input: "$products",
-                            as: "p",
-                            cond: {
-                              $eq: [
-                                "$$p._id",
-                                {
-                                  $arrayElemAt: [
-                                    {
-                                      $map: {
-                                        input: {
-                                          $filter: {
-                                            input: "$product_franchises",
-                                            as: "pf",
-                                            cond: {
-                                              $eq: ["$$pf._id", "$$item.product_franchise_id"],
-                                            },
-                                          },
-                                        },
-                                        as: "pf",
-                                        in: "$$pf.product_id",
-                                      },
-                                    },
-                                    0,
-                                  ],
-                                },
-                              ],
-                            },
-                          },
-                        },
-                        as: "p",
-                        in: "$$p.name",
-                      },
-                    },
-                    0,
-                  ],
-                },
-
-                options: {
-                  $map: {
-                    input: "$$item.options",
-                    as: "opt",
-                    in: {
-                      quantity: "$$opt.quantity",
-                      product_franchise_id: "$$opt.product_franchise_id",
-                      price_snapshot: "$$opt.price_snapshot",
-                      discount_amount: "$$opt.discount_amount",
-                      final_price: "$$opt.final_price",
-
-                      product_name: {
-                        $arrayElemAt: [
-                          {
-                            $map: {
-                              input: {
-                                $filter: {
-                                  input: "$option_products",
-                                  as: "p",
-                                  cond: {
-                                    $eq: [
-                                      "$$p._id",
-                                      {
-                                        $arrayElemAt: [
-                                          {
-                                            $map: {
-                                              input: {
-                                                $filter: {
-                                                  input: "$option_product_franchises",
-                                                  as: "pf",
-                                                  cond: {
-                                                    $eq: ["$$pf._id", "$$opt.product_franchise_id"],
-                                                  },
-                                                },
-                                              },
-                                              as: "pf",
-                                              in: "$$pf.product_id",
-                                            },
-                                          },
-                                          0,
-                                        ],
-                                      },
-                                    ],
-                                  },
-                                },
-                              },
-                              as: "p",
-                              in: "$$p.name",
-                            },
-                          },
-                          0,
-                        ],
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-
+      // 4. giữ nguyên project
       {
         $project: {
           _id: 1,
           code: 1,
-
           customer_id: 1,
           customer_name: 1,
-
           staff_id: 1,
           staff_name: 1,
           staff_email: 1,
-
           franchise_id: 1,
           franchise_name: 1,
-
           status: 1,
           address: 1,
           phone: 1,
-
+          message: 1,
           loyalty_points_used: 1,
           promotion_discount: 1,
           voucher_discount: 1,
           loyalty_discount: 1,
-
           subtotal_amount: 1,
           final_amount: 1,
-
           promotion_id: 1,
           promotion_type: 1,
           promotion_value: 1,
-
           voucher_id: 1,
           voucher_code: 1,
           voucher_type: 1,
           voucher_value: 1,
-
           order_items: 1,
         },
       },
@@ -281,189 +99,11 @@ export class OrderRepository extends BaseRepository<IOrder> {
     const result = await this.model.aggregate([
       ...this.buildOrderBaseAggregate({ code: orderCode }),
 
-      /**
-       * Order Items
-       */
-      {
-        $lookup: {
-          from: "orderitems",
-          localField: "_id",
-          foreignField: "order_id",
-          as: "order_items",
-        },
-      },
+      ...this.buildOrderItemLookups(),
 
-      /**
-       * Product franchises
-       */
-      {
-        $lookup: {
-          from: "productfranchises",
-          localField: "order_items.product_franchise_id",
-          foreignField: "_id",
-          as: "product_franchises",
-        },
-      },
-
-      /**
-       * Option product franchises
-       */
-      {
-        $lookup: {
-          from: "productfranchises",
-          localField: "order_items.options.product_franchise_id",
-          foreignField: "_id",
-          as: "option_product_franchises",
-        },
-      },
-
-      /**
-       * Products
-       */
-      {
-        $lookup: {
-          from: "products",
-          localField: "product_franchises.product_id",
-          foreignField: "_id",
-          as: "products",
-        },
-      },
-
-      /**
-       * Option products
-       */
-      {
-        $lookup: {
-          from: "products",
-          localField: "option_product_franchises.product_id",
-          foreignField: "_id",
-          as: "option_products",
-        },
-      },
-
-      /**
-       * Build order_items
-       */
-      {
-        $addFields: {
-          order_items: {
-            $map: {
-              input: "$order_items",
-              as: "item",
-              in: {
-                order_item_id: "$$item._id",
-                quantity: "$$item.quantity",
-                price_snapshot: "$$item.price_snapshot",
-                discount_amount: "$$item.discount_amount",
-                line_total: "$$item.line_total",
-                final_line_total: "$$item.final_line_total",
-                options_hash: "$$item.options_hash",
-                note: "$$item.note",
-
-                product_name: {
-                  $arrayElemAt: [
-                    {
-                      $map: {
-                        input: {
-                          $filter: {
-                            input: "$products",
-                            as: "p",
-                            cond: {
-                              $eq: [
-                                "$$p._id",
-                                {
-                                  $arrayElemAt: [
-                                    {
-                                      $map: {
-                                        input: {
-                                          $filter: {
-                                            input: "$product_franchises",
-                                            as: "pf",
-                                            cond: {
-                                              $eq: ["$$pf._id", "$$item.product_franchise_id"],
-                                            },
-                                          },
-                                        },
-                                        as: "pf",
-                                        in: "$$pf.product_id",
-                                      },
-                                    },
-                                    0,
-                                  ],
-                                },
-                              ],
-                            },
-                          },
-                        },
-                        as: "p",
-                        in: "$$p.name",
-                      },
-                    },
-                    0,
-                  ],
-                },
-
-                options: {
-                  $map: {
-                    input: "$$item.options",
-                    as: "opt",
-                    in: {
-                      quantity: "$$opt.quantity",
-                      product_franchise_id: "$$opt.product_franchise_id",
-                      price_snapshot: "$$opt.price_snapshot",
-                      discount_amount: "$$opt.discount_amount",
-                      final_price: "$$opt.final_price",
-
-                      product_name: {
-                        $arrayElemAt: [
-                          {
-                            $map: {
-                              input: {
-                                $filter: {
-                                  input: "$option_products",
-                                  as: "p",
-                                  cond: {
-                                    $eq: [
-                                      "$$p._id",
-                                      {
-                                        $arrayElemAt: [
-                                          {
-                                            $map: {
-                                              input: {
-                                                $filter: {
-                                                  input: "$option_product_franchises",
-                                                  as: "pf",
-                                                  cond: {
-                                                    $eq: ["$$pf._id", "$$opt.product_franchise_id"],
-                                                  },
-                                                },
-                                              },
-                                              as: "pf",
-                                              in: "$$pf.product_id",
-                                            },
-                                          },
-                                          0,
-                                        ],
-                                      },
-                                    ],
-                                  },
-                                },
-                              },
-                              as: "p",
-                              in: "$$p.name",
-                            },
-                          },
-                          0,
-                        ],
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      ...this.buildOrderItemsProjection({
+        includeProductInfo: true,
+      }),
 
       {
         $project: {
@@ -483,6 +123,7 @@ export class OrderRepository extends BaseRepository<IOrder> {
           status: 1,
           address: 1,
           phone: 1,
+          message: 1,
 
           loyalty_points_used: 1,
           promotion_discount: 1,
@@ -516,89 +157,11 @@ export class OrderRepository extends BaseRepository<IOrder> {
         is_deleted: false,
       }),
 
-      /**
-       * Order Items
-       */
-      {
-        $lookup: {
-          from: "orderitems",
-          localField: "_id",
-          foreignField: "order_id",
-          as: "order_items",
-        },
-      },
+      ...this.buildOrderItemLookups(),
 
-      /**
-       * Product franchises
-       */
-      {
-        $lookup: {
-          from: "productfranchises",
-          localField: "order_items.product_franchise_id",
-          foreignField: "_id",
-          as: "product_franchises",
-        },
-      },
-
-      /**
-       * Option product franchises
-       */
-      {
-        $lookup: {
-          from: "productfranchises",
-          localField: "order_items.options.product_franchise_id",
-          foreignField: "_id",
-          as: "option_product_franchises",
-        },
-      },
-
-      /**
-       * Products
-       */
-      {
-        $lookup: {
-          from: "products",
-          localField: "product_franchises.product_id",
-          foreignField: "_id",
-          as: "products",
-        },
-      },
-
-      /**
-       * Option products
-       */
-      {
-        $lookup: {
-          from: "products",
-          localField: "option_product_franchises.product_id",
-          foreignField: "_id",
-          as: "option_products",
-        },
-      },
-
-      /**
-       * Build order_items
-       */
-      {
-        $addFields: {
-          order_items: {
-            $map: {
-              input: "$order_items",
-              as: "item",
-              in: {
-                order_item_id: "$$item._id",
-                quantity: "$$item.quantity",
-                price_snapshot: "$$item.price_snapshot",
-                discount_amount: "$$item.discount_amount",
-                line_total: "$$item.line_total",
-                final_line_total: "$$item.final_line_total",
-                options_hash: "$$item.options_hash",
-                note: "$$item.note",
-              },
-            },
-          },
-        },
-      },
+      ...this.buildOrderItemsProjection({
+        includeProductInfo: true,
+      }),
 
       {
         $project: {
@@ -619,6 +182,7 @@ export class OrderRepository extends BaseRepository<IOrder> {
           status: 1,
           address: 1,
           phone: 1,
+          message: 1,
 
           loyalty_points_used: 1,
           promotion_discount: 1,
@@ -658,191 +222,13 @@ export class OrderRepository extends BaseRepository<IOrder> {
     const result = await this.model.aggregate([
       ...this.buildOrderBaseAggregate(matchQuery),
 
-      { $sort: { created_at: -1 } },
+      { $sort: { updated_at: -1, created_at: -1 } },
 
-      /**
-       * Order Items
-       */
-      {
-        $lookup: {
-          from: "orderitems",
-          localField: "_id",
-          foreignField: "order_id",
-          as: "order_items",
-        },
-      },
+      ...this.buildOrderItemLookups(),
 
-      /**
-       * Product franchises
-       */
-      {
-        $lookup: {
-          from: "productfranchises",
-          localField: "order_items.product_franchise_id",
-          foreignField: "_id",
-          as: "product_franchises",
-        },
-      },
-
-      /**
-       * Option product franchises
-       */
-      {
-        $lookup: {
-          from: "productfranchises",
-          localField: "order_items.options.product_franchise_id",
-          foreignField: "_id",
-          as: "option_product_franchises",
-        },
-      },
-
-      /**
-       * Products
-       */
-      {
-        $lookup: {
-          from: "products",
-          localField: "product_franchises.product_id",
-          foreignField: "_id",
-          as: "products",
-        },
-      },
-
-      /**
-       * Option products
-       */
-      {
-        $lookup: {
-          from: "products",
-          localField: "option_product_franchises.product_id",
-          foreignField: "_id",
-          as: "option_products",
-        },
-      },
-
-      /**
-       * Build order_items giống cart_items
-       */
-      {
-        $addFields: {
-          order_items: {
-            $map: {
-              input: "$order_items",
-              as: "item",
-              in: {
-                order_item_id: "$$item._id",
-                quantity: "$$item.quantity",
-                price_snapshot: "$$item.price_snapshot",
-                discount_amount: "$$item.discount_amount",
-                line_total: "$$item.line_total",
-                final_line_total: "$$item.final_line_total",
-                options_hash: "$$item.options_hash",
-                note: "$$item.note",
-
-                product_name: {
-                  $arrayElemAt: [
-                    {
-                      $map: {
-                        input: {
-                          $filter: {
-                            input: "$products",
-                            as: "p",
-                            cond: {
-                              $eq: [
-                                "$$p._id",
-                                {
-                                  $arrayElemAt: [
-                                    {
-                                      $map: {
-                                        input: {
-                                          $filter: {
-                                            input: "$product_franchises",
-                                            as: "pf",
-                                            cond: {
-                                              $eq: ["$$pf._id", "$$item.product_franchise_id"],
-                                            },
-                                          },
-                                        },
-                                        as: "pf",
-                                        in: "$$pf.product_id",
-                                      },
-                                    },
-                                    0,
-                                  ],
-                                },
-                              ],
-                            },
-                          },
-                        },
-                        as: "p",
-                        in: "$$p.name",
-                      },
-                    },
-                    0,
-                  ],
-                },
-
-                options: {
-                  $map: {
-                    input: "$$item.options",
-                    as: "opt",
-                    in: {
-                      quantity: "$$opt.quantity",
-                      product_franchise_id: "$$opt.product_franchise_id",
-                      price_snapshot: "$$opt.price_snapshot",
-                      discount_amount: "$$opt.discount_amount",
-                      final_price: "$$opt.final_price",
-
-                      product_name: {
-                        $arrayElemAt: [
-                          {
-                            $map: {
-                              input: {
-                                $filter: {
-                                  input: "$option_products",
-                                  as: "p",
-                                  cond: {
-                                    $eq: [
-                                      "$$p._id",
-                                      {
-                                        $arrayElemAt: [
-                                          {
-                                            $map: {
-                                              input: {
-                                                $filter: {
-                                                  input: "$option_product_franchises",
-                                                  as: "pf",
-                                                  cond: {
-                                                    $eq: ["$$pf._id", "$$opt.product_franchise_id"],
-                                                  },
-                                                },
-                                              },
-                                              as: "pf",
-                                              in: "$$pf.product_id",
-                                            },
-                                          },
-                                          0,
-                                        ],
-                                      },
-                                    ],
-                                  },
-                                },
-                              },
-                              as: "p",
-                              in: "$$p.name",
-                            },
-                          },
-                          0,
-                        ],
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      ...this.buildOrderItemsProjection({
+        includeProductInfo: true,
+      }),
 
       {
         $project: {
@@ -862,6 +248,7 @@ export class OrderRepository extends BaseRepository<IOrder> {
           status: 1,
           address: 1,
           phone: 1,
+          message: 1,
 
           loyalty_points_used: 1,
           promotion_discount: 1,
@@ -956,6 +343,10 @@ export class OrderRepository extends BaseRepository<IOrder> {
           staff_email: "$staff.email",
 
           voucher_code: "$voucher.code",
+
+          phone: "$phone",
+          address: "$address",
+          message: "$message",
         },
       },
 
@@ -970,32 +361,262 @@ export class OrderRepository extends BaseRepository<IOrder> {
     ];
   }
 
-  public async updateStatus(
-    orderId: Types.ObjectId,
-    status: OrderStatus,
+  private buildOrderItemLookups() {
+    return [
+      {
+        $lookup: {
+          from: "orderitems",
+          localField: "_id",
+          foreignField: "order_id",
+          as: "order_items",
+        },
+      },
+      {
+        $lookup: {
+          from: "productfranchises",
+          localField: "order_items.product_franchise_id",
+          foreignField: "_id",
+          as: "product_franchises",
+        },
+      },
+      {
+        $lookup: {
+          from: "productfranchises",
+          localField: "order_items.options.product_franchise_id",
+          foreignField: "_id",
+          as: "option_product_franchises",
+        },
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "product_franchises.product_id",
+          foreignField: "_id",
+          as: "products",
+        },
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "option_product_franchises.product_id",
+          foreignField: "_id",
+          as: "option_products",
+        },
+      },
+
+      // 🔥 merge product vào pf (KEY cải tiến)
+      {
+        $addFields: {
+          product_franchises: {
+            $map: {
+              input: "$product_franchises",
+              as: "pf",
+              in: {
+                $mergeObjects: [
+                  "$$pf",
+                  {
+                    product: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: "$products",
+                            as: "p",
+                            cond: { $eq: ["$$p._id", "$$pf.product_id"] },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+          option_product_franchises: {
+            $map: {
+              input: "$option_product_franchises",
+              as: "pf",
+              in: {
+                $mergeObjects: [
+                  "$$pf",
+                  {
+                    product: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: "$option_products",
+                            as: "p",
+                            cond: { $eq: ["$$p._id", "$$pf.product_id"] },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    ];
+  }
+
+  private buildOrderItemsProjection(options?: { includeProductInfo?: boolean }) {
+    const includeProduct = options?.includeProductInfo ?? false;
+
+    return [
+      {
+        $addFields: {
+          order_items: {
+            $map: {
+              input: "$order_items",
+              as: "item",
+              in: {
+                order_item_id: "$$item._id",
+                quantity: "$$item.quantity",
+                price_snapshot: "$$item.price_snapshot",
+                discount_amount: "$$item.discount_amount",
+                line_total: "$$item.line_total",
+                final_line_total: "$$item.final_line_total",
+                options_hash: "$$item.options_hash",
+                note: "$$item.note",
+
+                ...(includeProduct && {
+                  product_name: {
+                    $let: {
+                      vars: {
+                        pf: {
+                          $arrayElemAt: [
+                            {
+                              $filter: {
+                                input: "$product_franchises",
+                                as: "pf",
+                                cond: {
+                                  $eq: ["$$pf._id", "$$item.product_franchise_id"],
+                                },
+                              },
+                            },
+                            0,
+                          ],
+                        },
+                      },
+                      in: "$$pf.product.name",
+                    },
+                  },
+
+                  product_image_url: {
+                    $let: {
+                      vars: {
+                        pf: {
+                          $arrayElemAt: [
+                            {
+                              $filter: {
+                                input: "$product_franchises",
+                                as: "pf",
+                                cond: {
+                                  $eq: ["$$pf._id", "$$item.product_franchise_id"],
+                                },
+                              },
+                            },
+                            0,
+                          ],
+                        },
+                      },
+                      in: "$$pf.product.image_url",
+                    },
+                  },
+                }),
+
+                options: {
+                  $map: {
+                    input: "$$item.options",
+                    as: "opt",
+                    in: {
+                      quantity: "$$opt.quantity",
+                      product_franchise_id: "$$opt.product_franchise_id",
+                      price_snapshot: "$$opt.price_snapshot",
+                      discount_amount: "$$opt.discount_amount",
+                      final_price: "$$opt.final_price",
+
+                      ...(includeProduct && {
+                        product_name: {
+                          $let: {
+                            vars: {
+                              pf: {
+                                $arrayElemAt: [
+                                  {
+                                    $filter: {
+                                      input: "$option_product_franchises",
+                                      as: "pf",
+                                      cond: {
+                                        $eq: ["$$pf._id", "$$opt.product_franchise_id"],
+                                      },
+                                    },
+                                  },
+                                  0,
+                                ],
+                              },
+                            },
+                            in: "$$pf.product.name",
+                          },
+                        },
+
+                        product_image_url: {
+                          $let: {
+                            vars: {
+                              pf: {
+                                $arrayElemAt: [
+                                  {
+                                    $filter: {
+                                      input: "$option_product_franchises",
+                                      as: "pf",
+                                      cond: {
+                                        $eq: ["$$pf._id", "$$opt.product_franchise_id"],
+                                      },
+                                    },
+                                  },
+                                  0,
+                                ],
+                              },
+                            },
+                            in: "$$pf.product.image_url",
+                          },
+                        },
+                      }),
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    ];
+  }
+
+  public async updateStatusOrder(
+    orderId: string,
+    fromStatus: OrderStatus,
+    toStatus: OrderStatus,
     session?: ClientSession,
   ): Promise<IOrder | null> {
-    const update: any = {
-      status,
-    };
-
-    const now = new Date();
-
-    switch (status) {
-      case OrderStatus.CONFIRMED:
-        update.confirmed_at = now;
-        break;
-
-      case OrderStatus.COMPLETED:
-        update.completed_at = now;
-        break;
-
-      case OrderStatus.CANCELLED:
-        update.cancelled_at = now;
-        break;
-    }
-
-    return this.model.findByIdAndUpdate(orderId, update, { new: true, session });
+    return this.model.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(orderId),
+        status: fromStatus,
+      },
+      {
+        $set: {
+          status: toStatus,
+          updated_at: new Date(),
+        },
+      },
+      {
+        new: true,
+        session,
+      },
+    );
   }
 
   public async confirmOrder(orderId: Types.ObjectId, session?: ClientSession) {
@@ -1004,6 +625,7 @@ export class OrderRepository extends BaseRepository<IOrder> {
       {
         status: OrderStatus.CONFIRMED,
         confirmed_at: new Date(),
+        updated_at: new Date(),
       },
       { new: true, session },
     );
@@ -1015,6 +637,7 @@ export class OrderRepository extends BaseRepository<IOrder> {
       {
         status: OrderStatus.COMPLETED,
         completed_at: new Date(),
+        updated_at: new Date(),
       },
       { new: true, session },
     );
@@ -1024,9 +647,10 @@ export class OrderRepository extends BaseRepository<IOrder> {
     return this.model.findByIdAndUpdate(
       orderId,
       {
-        status: OrderStatus.CANCELLED,
+        status: OrderStatus.CANCELED,
         failed_reason,
         cancelled_at: new Date(),
+        updated_at: new Date(),
       },
       { new: true, session },
     );

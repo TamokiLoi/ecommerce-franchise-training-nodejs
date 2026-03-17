@@ -1,6 +1,8 @@
 import { BaseModule } from "../../core";
 import { AuditLogModule } from "../audit-log";
 import { CustomerFranchiseModule } from "../customer-franchise";
+import { DeliveryModule } from "../delivery";
+import { InventoryModule } from "../inventory";
 import { OrderItemModule } from "../order-item";
 import { OrderStatusLogModule } from "../order-status-log";
 import { PaymentModule } from "../payment";
@@ -16,6 +18,8 @@ export class OrderModule extends BaseModule<OrderRoute> {
   constructor(
     orderStatusLogModule: OrderStatusLogModule,
     orderItemModule: OrderItemModule,
+    inventoryModule: InventoryModule,
+    deliveryModule: DeliveryModule,
     customerFranchiseModule: CustomerFranchiseModule,
   ) {
     super();
@@ -23,6 +27,8 @@ export class OrderModule extends BaseModule<OrderRoute> {
     // ===== External dependencies =====
     const orderStatusLogger = orderStatusLogModule.getOrderStatusLogger();
     const orderItemQuery = orderItemModule.getOrderItemQuery();
+    const inventoryQuery = inventoryModule.getInventoryQuery();
+    const deliveryQuery = deliveryModule.getDeliveryQuery();
     const customerFranchiseQuery = customerFranchiseModule.getCustomerFranchiseQuery();
 
     // ===== Internal dependencies =====
@@ -36,6 +42,8 @@ export class OrderModule extends BaseModule<OrderRoute> {
       auditLogger,
       orderStatusLogger,
       orderItemQuery,
+      inventoryQuery,
+      deliveryQuery,
       customerFranchiseQuery,
     );
     const controller = new OrderController(service);

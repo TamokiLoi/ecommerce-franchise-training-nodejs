@@ -29,4 +29,5 @@ export interface IInventoryQuery {
   getById(id: string): Promise<IInventory | null>;
   getByProductFranchiseId(productFranchiseId: string): Promise<IInventory | null>;
   getByProductFranchiseIds(productFranchiseIds: Types.ObjectId[], session?: ClientSession): Promise<IInventory[]>;
+  deductProduct(productFranchiseId: string, quantity: number, session?: ClientSession): Promise<boolean>;
 }

@@ -22,7 +22,7 @@ Cart represents a temporary shopping session.
 * customer_id
 * franchise_id
 * staff_id
-* status (ACTIVE / CHECKED_OUT / CANCELLED)
+* status (ACTIVE / CHECKED_OUT / CANCELED)
 
 ### Pricing
 
@@ -93,7 +93,7 @@ Status:
 * READY_FOR_PICKUP
 * OUT_FOR_DELIVERY
 * COMPLETED
-* CANCELLED
+* CANCELED
 
 Pricing snapshot:
 

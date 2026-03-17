@@ -50,6 +50,8 @@ const productModule = new ProductModule();
 const loyaltyRuleModule = new LoyaltyRuleModule();
 const loyaltyTransactionModule = new LoyaltyTransactionModule();
 const shiftModule = new ShiftModule();
+const deliveryModule = new DeliveryModule();
+const refundModule = new RefundModule();
 
 // ===== Dependent modules =====
 const userFranchiseRoleModule = new UserFranchiseRoleModule(userModule, roleModule, franchiseModule);
@@ -83,7 +85,13 @@ const clientModule = new ClientModule(
 );
 const orderStatusLogModule = new OrderStatusLogModule();
 const orderItemModule = new OrderItemModule();
-const orderModule = new OrderModule(orderStatusLogModule, orderItemModule, customerFranchiseModule);
+const orderModule = new OrderModule(
+  orderStatusLogModule,
+  orderItemModule,
+  inventoryModule,
+  deliveryModule,
+  customerFranchiseModule,
+);
 const paymentModule = new PaymentModule(orderModule, voucherModule, customerFranchiseModule);
 const cartItemModule = new CartItemModule();
 const cartModule = new CartModule(
@@ -97,8 +105,6 @@ const cartModule = new CartModule(
   paymentModule,
   inventoryModule,
 );
-const deliveryModule = new DeliveryModule();
-const refundModule = new RefundModule();
 
 // ===== Register routes =====
 const routes = [
