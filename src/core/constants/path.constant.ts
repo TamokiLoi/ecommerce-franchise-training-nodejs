@@ -216,11 +216,11 @@ export const API_PATH = {
   ORDER_RESTORE: "/api/orders/:id/restore",
   ORDER_CHANGE_STATUS: "/api/orders/:id/status",
   ORDER_BY_STAFF: "/api/orders/staff/:staffId",
-  ORDER_BY_FRANCHISE: "/api/orders/franchise/:franchiseId",
   GET_ORDER_BY_CART: "/api/orders/cart/:cartId",
   GET_ORDERS_BY_CUSTOMER: "/api/orders/customer/:customerId",
   GET_ORDERS_BY_FRANCHISE: "/api/orders/franchise/:franchiseId",
   PREPARING_ORDER: "/api/orders/:id/preparing",
+  READY_FOR_PICKUP_ORDER: "/api/orders/:id/ready-for-pickup",
 
   // order status logs
   ORDER_STATUS_LOG: "/api/order-status-logs",

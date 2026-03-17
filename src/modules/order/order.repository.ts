@@ -475,6 +475,7 @@ export class OrderRepository extends BaseRepository<IOrder> {
               in: {
                 order_item_id: "$$item._id",
                 quantity: "$$item.quantity",
+                product_franchise_id: "$$item.product_franchise_id",
                 price_snapshot: "$$item.price_snapshot",
                 discount_amount: "$$item.discount_amount",
                 line_total: "$$item.line_total",

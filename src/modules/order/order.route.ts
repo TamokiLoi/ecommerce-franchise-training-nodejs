@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { adminAuthMiddleware, API_PATH, authMiddleware, IRoute } from "../../core";
+import { adminAuthMiddleware, API_PATH, authMiddleware, IRoute, validationMiddleware } from "../../core";
 import { OrderController } from "./order.controller";
+import { AssignShipperDto } from "./dto/assign.dto";
 
 export default class OrderRoute implements IRoute {
   public path = API_PATH.ORDER;
@@ -33,10 +34,15 @@ export default class OrderRoute implements IRoute {
     // GET domain:/api/orders/franchise/:franchiseId - Get order by franchise
     this.router.get(API_PATH.GET_ORDERS_BY_FRANCHISE, adminAuthMiddleware(), this.controller.getOrdersForStaff);
 
-    // GET domain:/api/orders/:id/preparing - Start preparing order 
-    this.router.get(API_PATH.PREPARING_ORDER, adminAuthMiddleware(), this.controller.markPreparingOrder);
-    
-    // GET domain:/api/orders/:id/preparing - Start preparing order 
-    this.router.get(API_PATH.PREPARING_ORDER, adminAuthMiddleware(), this.controller.markPreparingOrder);
+    // PUT domain:/api/orders/:id/preparing - Start preparing order
+    this.router.put(API_PATH.PREPARING_ORDER, adminAuthMiddleware(), this.controller.markPreparingOrder);
+
+    // PUT domain:/api/orders/:id/ready-for-pickup - Ready for pickup order
+    this.router.put(
+      API_PATH.READY_FOR_PICKUP_ORDER,
+      adminAuthMiddleware(),
+      validationMiddleware(AssignShipperDto),
+      this.controller.markReadyForPickupOrder,
+    );
   }
 }
