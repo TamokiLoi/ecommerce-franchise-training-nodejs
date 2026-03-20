@@ -51,7 +51,15 @@ export class CustomerFranchiseRepository extends BaseRepository<ICustomerFranchi
       customer_id: customerId,
       franchise_id: franchiseId,
       is_deleted: false,
-    });
+    })
+      .populate({
+        path: "customer_id",
+        select: "name email phone",
+      })
+      .populate({
+        path: "franchise_id",
+        select: "name",
+      });
 
     if (session) {
       query.session(session);

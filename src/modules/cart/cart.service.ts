@@ -436,7 +436,7 @@ export class CartService extends BaseCrudService<ICart, CreateCartDto, UpdateCar
 
     if (!voucher) throw new HttpException(HttpStatus.BadRequest, "Voucher not found");
 
-    if (voucher.code === voucher_code) {
+    if (finalItem.voucher_code && finalItem.voucher_code === voucher_code) {
       throw new HttpException(HttpStatus.BadRequest, "Cart has already applied this voucher");
     }
 
