@@ -6,7 +6,6 @@ import { AuthPayload } from "../models";
 
 export const verifyUserToken = async (token: string): Promise<AuthPayload> => {
   const payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET!) as AuthPayload;
-
   const isValidUser = await UserSchema.exists({
     _id: payload.id,
     is_deleted: false,

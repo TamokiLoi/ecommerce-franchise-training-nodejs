@@ -1,3 +1,4 @@
+import { ClientSession } from "mongoose";
 import {
   BaseCrudService,
   BaseFieldName,
@@ -275,5 +276,9 @@ export default class CustomerService
 
   public async searchByKeyword(keyword: string): Promise<ICustomer[]> {
     return this.customerRepo.searchByKeyword(keyword);
+  }
+
+  public async countCustomers(session?: ClientSession): Promise<number> {
+    return this.customerRepo.countCustomers(session);
   }
 }

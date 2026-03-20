@@ -9,6 +9,39 @@ export class CustomerFranchiseRepository extends BaseRepository<ICustomerFranchi
     super(CustomerFranchiseSchema);
   }
 
+  public async countUniqueCustomers(franchiseId?: Types.ObjectId, session?: ClientSession): Promise<number> {
+    // build match condition
+    const match: any = {
+      is_deleted: false,
+    };
+
+    if (franchiseId) {
+      match.franchise_id = franchiseId;
+    }
+
+    const aggregateQuery = this.model.aggregate([
+      {
+        $match: match,
+      },
+      {
+        $group: {
+          _id: "$customer_id",
+        },
+      },
+      {
+        $count: "total",
+      },
+    ]);
+
+    if (session) {
+      aggregateQuery.session(session);
+    }
+
+    const result = await aggregateQuery;
+
+    return result[0]?.total || 0;
+  }
+
   public async findByCustomerAndFranchise(
     customerId: Types.ObjectId,
     franchiseId: Types.ObjectId,
@@ -42,16 +75,21 @@ export class CustomerFranchiseRepository extends BaseRepository<ICustomerFranchi
       ...model.searchCondition,
     };
 
-    const { customer_id, franchise_id, loyalty_points, loyalty_tier, total_earned_points, is_active, is_deleted } =
-      searchCondition;
+    const { customer_id, franchise_id, loyalty_tier, is_active, is_deleted } = searchCondition;
     const { pageNum, pageSize } = model.pageInfo;
 
     let matchQuery: Record<string, any> = {};
 
+    if (franchise_id) {
+      matchQuery.franchise_id = new Types.ObjectId(franchise_id);
+    }
+
+    if (customer_id) {
+      matchQuery.customer_id = new Types.ObjectId(customer_id);
+    }
+
     // common + dynamic filters
     matchQuery = formatItemsQuery(matchQuery, {
-      customer_id,
-      franchise_id,
       loyalty_tier,
       is_active,
       is_deleted,

@@ -9,6 +9,16 @@ export class CustomerRepository extends BaseRepository<ICustomer> {
     super(CustomerSchema);
   }
 
+  public async countCustomers(session?: ClientSession): Promise<number> {
+    const query = this.model.countDocuments({
+      is_deleted: false,
+    });
+
+    if (session) query.session(session);
+
+    return query;
+  }
+
   public async getItems(model: SearchPaginationItemDto): Promise<{ data: ICustomer[]; total: number }> {
     const searchCondition = {
       ...new SearchItemDto(),

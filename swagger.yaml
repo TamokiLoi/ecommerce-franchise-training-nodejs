@@ -49,6 +49,8 @@ tags:
     description: CustomerFranchise related endpoints
   - name: Customer
     description: Customer related endpoints
+  - name: Dashboard
+    description: Dashboard related endpoints
   - name: Delivery
     description: Delivery related endpoints
   - name: Inventory

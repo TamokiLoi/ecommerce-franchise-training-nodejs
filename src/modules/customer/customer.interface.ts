@@ -1,4 +1,4 @@
-import { Document } from "mongoose";
+import { ClientSession, Document } from "mongoose";
 import { BaseFieldName, IBase } from "../../core";
 
 export interface ICustomer extends Document, IBase {
@@ -29,4 +29,5 @@ export interface ICustomerQuery {
   updateCustomerResendToken(id: string): Promise<ICustomer | null>;
   updateCustomerPassword(id: string, newPassword: string, isForgotPassword?: boolean): Promise<ICustomer | null>;
   increaseTokenVersion(id: string): Promise<ICustomer | null>;
+  countCustomers(session?: ClientSession): Promise<number>;
 }

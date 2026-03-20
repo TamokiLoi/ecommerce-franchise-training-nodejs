@@ -1,13 +1,13 @@
 import { ClientSession, Types } from "mongoose";
 import {
-    BaseCrudService,
-    BaseFieldName,
-    HttpException,
-    HttpStatus,
-    LoyaltyTransactionType,
-    MSG_BUSINESS,
-    OrderCustomerFranchiseType,
-    UserType,
+  BaseCrudService,
+  BaseFieldName,
+  HttpException,
+  HttpStatus,
+  LoyaltyTransactionType,
+  MSG_BUSINESS,
+  OrderCustomerFranchiseType,
+  UserType,
 } from "../../core";
 import { AuditAction, AuditEntityType, IAuditLogger, pickAuditSnapshot } from "../audit-log";
 import { ICustomerQuery } from "../customer";
@@ -15,11 +15,11 @@ import { IFranchiseQuery } from "../franchise";
 import { ILoyaltyRuleQuery } from "../loyalty-rule";
 import { ILoyaltyTransactionLogger } from "../loyalty-transaction";
 import {
-    IAddPointPayload,
-    ICustomerFranchise,
-    ICustomerFranchiseQuery,
-    IRestoreUsedPointsPayload,
-    IRevertPointPayload,
+  IAddPointPayload,
+  ICustomerFranchise,
+  ICustomerFranchiseQuery,
+  IRestoreUsedPointsPayload,
+  IRevertPointPayload,
 } from "./customer-franchise.interface";
 import { CustomerFranchiseRepository } from "./customer-franchise.repository";
 import CreateCustomerFranchiseDto, { ICreateCustomerFranchiseDto } from "./dto/create.dto";
@@ -308,6 +308,18 @@ export default class CustomerFranchiseService
     );
 
     return true;
+  }
+
+  public async countCustomerFranchises(franchiseId?: string): Promise<number> {
+    console.log("franchiseId", franchiseId);
+    let id: Types.ObjectId | undefined;
+
+    if (franchiseId && Types.ObjectId.isValid(franchiseId)) {
+      id = new Types.ObjectId(franchiseId);
+    }
+
+    console.log("id", id);
+    return this.customerFranchiseRepo.countUniqueCustomers(id);
   }
 
   private async updateCustomerStats(

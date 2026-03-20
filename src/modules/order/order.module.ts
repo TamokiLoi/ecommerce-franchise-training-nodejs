@@ -5,7 +5,6 @@ import { DeliveryModule } from "../delivery";
 import { InventoryModule } from "../inventory";
 import { OrderItemModule } from "../order-item";
 import { OrderStatusLogModule } from "../order-status-log";
-import { PaymentModule } from "../payment";
 import { OrderController } from "./order.controller";
 import { IOrderQuery } from "./order.interface";
 import { OrderRepository } from "./order.repository";

@@ -249,4 +249,7 @@ export const API_PATH = {
   SEARCH_DELIVERIES: "/api/deliveries/search",
   PICKUP_DELIVERY: "/api/deliveries/:deliveryId/pickup",
   COMPLETE_DELIVERY: "/api/deliveries/:deliveryId/complete",
+
+  // dashboard
+  DASHBOARD: "/api/dashboards",
 };

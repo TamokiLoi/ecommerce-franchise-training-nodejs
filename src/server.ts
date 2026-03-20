@@ -32,6 +32,7 @@ import { ShiftAssignmentModule } from "./modules/shift-assignment";
 import { UserModule } from "./modules/user";
 import { UserFranchiseRoleModule } from "./modules/user-franchise-role";
 import { VoucherModule } from "./modules/voucher/voucher.module";
+import { DashboardModule } from "./modules/dashboard";
 
 dotenv.config();
 validateEnv();
@@ -106,6 +107,8 @@ const cartModule = new CartModule(
   inventoryModule,
 );
 
+const dashboardModule = new DashboardModule(customerModule, customerFranchiseModule);
+
 // ===== Register routes =====
 const routes = [
   indexModule.getRoute(),
@@ -128,6 +131,7 @@ const routes = [
   voucherModule.getRoute(),
   shiftModule.getRoute(),
   shiftAssignmentModule.getRoute(),
+  dashboardModule.getRoute(),
 
   // Public route
   clientModule.getRoute(),

@@ -60,4 +60,5 @@ export interface ICustomerFranchiseQuery {
   addPoints(payload: IAddPointPayload, session?: ClientSession): Promise<boolean>;
   revertPoints(payload: IRevertPointPayload, session?: ClientSession): Promise<boolean>;
   restoreUsedPoints(payload: IRestoreUsedPointsPayload, session?: ClientSession): Promise<boolean>;
+  countCustomerFranchises(franchiseId?: string): Promise<number>;
 }
