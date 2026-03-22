@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { API_PATH, SYSTEM_ADMIN_ROLES, SYSTEM_AND_FRANCHISE_MANAGER_ROLES } from "../../core/constants";
+import { API_PATH, SYSTEM_ADMIN_ROLES, SYSTEM_AND_FRANCHISE_ALL_ROLES, SYSTEM_AND_FRANCHISE_MANAGER_ROLES } from "../../core/constants";
 import { IRoute } from "../../core/interfaces";
 import { adminAuthMiddleware, requireMoreContext, validationMiddleware } from "../../core/middleware";
 import CreateUserFranchiseRoleDto from "./dto/create.dto";
@@ -86,7 +86,7 @@ export default class UserFranchiseRoleRoute implements IRoute {
     this.router.get(
       API_PATH.USER_FRANCHISE_ROLE_BY_FRANCHISE_ID,
       adminAuthMiddleware(),
-      requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
       this.controller.getUsersByFranchiseId,
     );
   }
