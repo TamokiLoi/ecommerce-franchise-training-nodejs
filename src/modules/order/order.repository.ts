@@ -52,6 +52,7 @@ export class OrderRepository extends BaseRepository<IOrder> {
           customer_id: 1,
           customer_name: "$customer.name",
           phone: 1,
+          failed_reason: 1,
 
           status: 1,
           subtotal_amount: 1,
@@ -105,6 +106,7 @@ export class OrderRepository extends BaseRepository<IOrder> {
           voucher_type: 1,
           voucher_value: 1,
           order_items: 1,
+          failed_reason: 1,
         },
       },
     ]);
@@ -126,6 +128,7 @@ export class OrderRepository extends BaseRepository<IOrder> {
         $project: {
           _id: 1,
           code: 1,
+          failed_reason: 1,
 
           customer_id: 1,
           customer_name: 1,
@@ -185,6 +188,7 @@ export class OrderRepository extends BaseRepository<IOrder> {
           _id: 1,
           cart_id: 1,
           code: 1,
+          failed_reason: 1,
 
           customer_id: 1,
           customer_name: 1,
@@ -251,6 +255,7 @@ export class OrderRepository extends BaseRepository<IOrder> {
         $project: {
           _id: 1,
           code: 1,
+          failed_reason: 1,
 
           customer_id: 1,
           customer_name: 1,

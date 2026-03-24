@@ -48,10 +48,18 @@ export class PaymentController {
     try {
       const { customerId } = req.params;
       const { status } = req.query;
-      const items: IPayment[] = await this.service.getPaymentsByCustomerId(
-        new Types.ObjectId(customerId),
-        status as PaymentStatus,
-      );
+      const items: IPayment[] = await this.service.getPaymentsByCustomerId(customerId, status as PaymentStatus);
+      res.status(HttpStatus.Success).json(formatResponse(items));
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public getPaymentsByFranchiseId = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { franchiseId } = req.params;
+      const { status } = req.query;
+      const items: IPayment[] = await this.service.getPaymentsByFranchiseId(franchiseId, status as PaymentStatus);
       res.status(HttpStatus.Success).json(formatResponse(items));
     } catch (error) {
       next(error);

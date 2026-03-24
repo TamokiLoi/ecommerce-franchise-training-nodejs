@@ -69,40 +69,42 @@ export class PaymentService implements IPaymentQuery {
 
   public async getPaymentDetail(id: string): Promise<IPayment> {
     const item = await this.paymentRepository.findById(id);
-
     if (!item) {
       throw new HttpException(HttpStatus.BadRequest, "Payment not found");
     }
-
     return item;
   }
 
   public async getPaymentDetailByCode(code: string): Promise<IPayment> {
     const item = await this.paymentRepository.getPaymentByCode(code);
-
     if (!item) {
       throw new HttpException(HttpStatus.BadRequest, "Payment not found");
     }
-
     return item;
   }
 
   public async getPaymentByOrderId(orderId: string, session?: ClientSession): Promise<IPayment> {
     const item = await this.paymentRepository.findByOrderId(new Types.ObjectId(orderId), session);
-
     if (!item) {
       throw new HttpException(HttpStatus.BadRequest, "Payment not found");
     }
-
     return item;
   }
 
   public async getPaymentsByCustomerId(
-    customerId: Types.ObjectId,
+    customerId: string,
     status?: PaymentStatus,
     session?: ClientSession,
   ): Promise<IPayment[]> {
     return this.paymentRepository.findByCustomerId(customerId, status, session);
+  }
+
+  public async getPaymentsByFranchiseId(
+    franchiseId: string,
+    status?: PaymentStatus,
+    session?: ClientSession,
+  ): Promise<IPayment[]> {
+    return this.paymentRepository.findByFranchiseId(franchiseId, status, session);
   }
 
   public async confirmPayment(

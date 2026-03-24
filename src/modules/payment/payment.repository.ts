@@ -25,12 +25,12 @@ export class PaymentRepository extends BaseRepository<IPayment> {
   }
 
   public async findByCustomerId(
-    customerId: Types.ObjectId,
+    customerId: string,
     status?: PaymentStatus,
     session?: ClientSession,
   ): Promise<IPayment[]> {
     const filter: any = {
-      customer_id: customerId,
+      customer_id: new Types.ObjectId(customerId),
       is_deleted: false,
     };
 
@@ -38,7 +38,38 @@ export class PaymentRepository extends BaseRepository<IPayment> {
       filter.status = status;
     }
 
-    const query = this.model.find(filter).sort({ created_at: -1 });
+    const query = this.model
+      .find(filter)
+      .populate("franchise_id", "name")
+      .populate("customer_id", "name")
+      .populate("order_id", "code")
+      .sort({ created_at: -1 });
+
+    if (session) query.session(session);
+
+    return query;
+  }
+
+  public async findByFranchiseId(
+    franchiseId: string,
+    status?: PaymentStatus,
+    session?: ClientSession,
+  ): Promise<IPayment[]> {
+    const filter: any = {
+      franchise_id: new Types.ObjectId(franchiseId),
+      is_deleted: false,
+    };
+
+    if (status) {
+      filter.status = status;
+    }
+
+    const query = this.model
+      .find(filter)
+      .populate("franchise_id", "name")
+      .populate("customer_id", "name")
+      .populate("order_id", "code")
+      .sort({ created_at: -1 });
 
     if (session) query.session(session);
 

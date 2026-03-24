@@ -41,5 +41,8 @@ export default class PaymentRoute implements IRoute {
 
     // GET domain:/api/payments/customer/:customerId - Get payment by customer
     this.router.get(API_PATH.GET_PAYMENTS_BY_CUSTOMER, authMiddleware(), this.controller.getPaymentsByCustomerId);
+
+    // GET domain:/api/payments/franchise/:franchiseId - Get payment by franchise
+    this.router.get(API_PATH.GET_PAYMENTS_BY_FRANCHISE, authMiddleware(), this.controller.getPaymentsByFranchiseId);
   }
 }

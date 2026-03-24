@@ -238,6 +238,7 @@ export const API_PATH = {
   PAYMENT_FAILED: "/api/payments/:id/failed",
   GET_PAYMENT_BY_ORDER: "/api/payments/order/:orderId",
   GET_PAYMENTS_BY_CUSTOMER: "/api/payments/customer/:customerId",
+  GET_PAYMENTS_BY_FRANCHISE: "/api/payments/franchise/:franchiseId",
 
   // refund
   REFUND: "/api/refunds",
