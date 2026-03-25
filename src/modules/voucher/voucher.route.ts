@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { API_PATH, SYSTEM_AND_FRANCHISE_MANAGER_ROLES } from "../../core/constants";
+import { API_PATH, SYSTEM_AND_FRANCHISE_ALL_ROLES, SYSTEM_AND_FRANCHISE_MANAGER_ROLES } from "../../core/constants";
 import { IRoute } from "../../core/interfaces";
 import { VoucherController } from "./voucher.controller";
 import { adminAuthMiddleware, authMiddleware, requireMoreContext, validationMiddleware } from "../../core/middleware";
@@ -63,7 +63,7 @@ export default class VoucherRoute implements IRoute {
     this.router.post(
       API_PATH.VOUCHER_SEARCH,
       adminAuthMiddleware(),
-      requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
       validationMiddleware(SearchPaginationItemDto, true, {
         enableImplicitConversion: false,
       }),
@@ -74,7 +74,7 @@ export default class VoucherRoute implements IRoute {
     this.router.get(
       API_PATH.VOUCHER_ID,
       adminAuthMiddleware(),
-      requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
       this.controller.getItem,
     );
 

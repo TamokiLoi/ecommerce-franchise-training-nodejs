@@ -6,6 +6,7 @@ import {
   authMiddleware,
   IRoute,
   requireMoreContext,
+  SYSTEM_AND_FRANCHISE_ALL_ROLES,
   SYSTEM_AND_FRANCHISE_MANAGER_ROLES,
   validationMiddleware,
 } from "../../core";
@@ -71,7 +72,7 @@ export default class PromotionRoute implements IRoute {
     this.router.post(
       API_PATH.PROMOTION_SEARCH,
       adminAuthMiddleware(),
-      requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
       validationMiddleware(SearchPaginationItemDto, true, {
         enableImplicitConversion: false,
       }),
@@ -82,7 +83,7 @@ export default class PromotionRoute implements IRoute {
     this.router.get(
       API_PATH.PROMOTION_ID,
       adminAuthMiddleware(),
-      requireMoreContext(SYSTEM_AND_FRANCHISE_MANAGER_ROLES),
+      requireMoreContext(SYSTEM_AND_FRANCHISE_ALL_ROLES),
       this.controller.getDetail,
     );
 
